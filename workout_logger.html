@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Workout Logger v7 (Polished)</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: #0d1117; /* GitHub Dark BG */
+            color: #c9d1d9; /* GitHub Dark Text */
+            text-align: center;
+        }
+        
+        .muscle-tabs {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 5px 0;
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        .muscle-tabs::-webkit-scrollbar { display: none; } /* Chrome, Safari, Opera */
+        
+        .muscle-tab {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .muscle-tab.active {
+            background: #238636; /* GitHub Green */
+            color: #ffffff;
+            border-color: #2ea043;
+        }
+        
+        .exercise-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .exercise-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 20px 10px;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .exercise-btn.selected {
+            background: #1f6feb; /* GitHub Blue */
+            color: #ffffff;
+            border-color: #388bfd;
+            transform: scale(1.05);
+            font-weight: bold;
+        }
+        
+        #startBtn {
+            width: 90%;
+            height: 70px;
+            margin: 10px auto;
+            font-size: 24px;
+            background: #2ea043;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.2);
+            transition: all 0.2s ease-in-out;
+        }
+        
+        #startBtn.recording {
+            background: #da3633; /* GitHub Red */
+            box-shadow: 0 4px 15px rgba(218, 54, 51, 0.3);
+            animation: pulse 1.2s infinite;
+        }
+        
+        #startBtn:disabled {
+            background: #21262d;
+            color: #484f58;
+            box-shadow: none;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        
+        #status { font-size: 28px; margin: 20px 0; min-height: 40px; font-weight: 500; }
+        
+    </style>
+</head>
+<body>
+    <h2 style="margin: 10px 0; font-weight: 600;">Workout Data Logger</h2>
+    
+    <div class="muscle-tabs" id="muscleTabs">
+        <!-- Tabs will be populated here -->
+    </div>
+    
+    <div id="status">Select an Exercise</div>
+    
+    <div class="exercise-grid" id="exerciseGrid">
+        <!-- Exercises will be populated here -->
+    </div>
+    
+    <button id="startBtn" disabled>Select an Exercise</button>
+
+    <script>
+    const exerciseDatabase = {
+        chest: [
+            { id: 'bench_press', name: 'Bench Press' },
+            { id: 'incline_press', name: 'Incline Press' },
+            { id: 'dumbbell_press', name: 'DB Press' },
+            { id: 'dumbbell_incline_press', name: 'DB Incline Press' },
+            { id: 'cable_flyes', name: 'Cable flyes' },
+        ],
+        back: [
+            { id: 'cable_row', name: 'Cable Row' },
+            { id: 'lat_pulldown', name: 'Lat Pulldown' },
+            { id: 'bent_over_row', name: 'Bent Row' },
+        ],
+        shoulders: [
+            { id: 'shoulder_press', name: 'Shoulder Press' },
+            { id: 'lateral_raise', name: 'Lateral Raise' },
+            { id: 'rear_delt', name: 'Rear Delts' },
+        ],
+        arms: [
+            { id: 'cable_curl', name: 'Cable Curl' },
+            { id: 'bar_curl', name: 'Bar Curl' },
+            { id: 'hammer_curl', name: 'Hammer Curl' },
+            { id: 'tricep_pushdown', name: 'Tricep Pushdown' },
+            { id: 'tricep_overhead_extension', name: 'Tricep overhead.ext' },
+        ],
+        legs: [
+            { id: 'squat', name: 'Squat' },
+            { id: 'deadlift', name: 'Deadlift' },
+            { id: 'leg_press', name: 'Leg Press' },
+        ]
+    };
+    
+    // State
+    let selectedExercise = null;
+    let recording = false;
+    let sensorData = [];
+    let setCounts = {};
+    let accelerometer;
+
+    // UI Elements
+    const startBtn = document.getElementById('startBtn');
+    const statusDiv = document.getElementById('status');
+    const exerciseGrid = document.getElementById('exerciseGrid');
+    const muscleTabsContainer = document.getElementById('muscleTabs');
+    
+    // --- Setup Functions ---
+    function init() {
+        populateMuscleTabs();
+        selectMuscle('chest');
+        initSensor();
+    }
+
+    function populateMuscleTabs() {
+        for (const muscle in exerciseDatabase) {
+            const btn = document.createElement('button');
+            btn.className = 'muscle-tab';
+            btn.textContent = muscle.toUpperCase();
+            btn.dataset.muscle = muscle;
+            btn.onclick = () => selectMuscle(muscle);
+            muscleTabsContainer.appendChild(btn);
+        }
+    }
+    
+    function selectMuscle(muscle) {
+        document.querySelectorAll('.muscle-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.muscle-tab[data-muscle="${muscle}"]`).classList.add('active');
+        populateExercises(muscle);
+        resetSelection();
+    }
+    
+    function populateExercises(muscle) {
+        exerciseGrid.innerHTML = '';
+        const exercises = exerciseDatabase[muscle] || [];
+        exercises.forEach(exercise => {
+            const btn = document.createElement('button');
+            btn.className = 'exercise-btn';
+            btn.textContent = exercise.name;
+            btn.onclick = () => selectExercise(btn, exercise);
+            exerciseGrid.appendChild(btn);
+        });
+    }
+
+    function selectExercise(btnElement, exercise) {
+        document.querySelectorAll('.exercise-btn').forEach(btn => btn.classList.remove('selected'));
+        btnElement.classList.add('selected');
+        
+        selectedExercise = exercise;
+        startBtn.disabled = false;
+        startBtn.textContent = `START ${exercise.name.toUpperCase()}`;
+        statusDiv.textContent = `Ready: ${exercise.name}`;
+    }
+
+    function resetSelection() {
+        selectedExercise = null;
+        startBtn.disabled = true;
+        startBtn.textContent = 'Select an Exercise';
+        statusDiv.textContent = 'Select an Exercise';
+    }
+
+    // --- Core Logic ---
+    function initSensor() {
+        if ('Accelerometer' in window) {
+            accelerometer = new Accelerometer({ frequency: 60 });
+            accelerometer.addEventListener('error', e => console.error(e));
+        } else {
+            statusDiv.textContent = "Sensor API not supported.";
+            startBtn.disabled = true;
+        }
+    }
+    
+    startBtn.addEventListener('click', () => {
+        if (recording) stopRecording();
+        else startRecording();
+    });
+
+    function startRecording() {
+        if (!selectedExercise || !accelerometer) return;
+        
+        recording = true;
+        sensorData = [];
+        
+        startBtn.textContent = 'STOP RECORDING';
+        startBtn.classList.add('recording');
+        statusDiv.textContent = 'RECORDING...';
+        
+        accelerometer.addEventListener('reading', handleMotion);
+        accelerometer.start();
+    }
+    
+    function handleMotion() {
+        if (!recording) return;
+        const acc = accelerometer;
+        sensorData.push({
+            t: Date.now(),
+            ax: acc.x, ay: acc.y, az: acc.z,
+            magnitude: Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2)
+        });
+    }
+
+    function stopRecording() {
+        if (accelerometer) {
+            accelerometer.removeEventListener('reading', handleMotion);
+            accelerometer.stop();
+        }
+        
+        recording = false;
+        startBtn.textContent = `START ${selectedExercise.name.toUpperCase()}`;
+        startBtn.classList.remove('recording');
+
+        if (sensorData.length < 100) { // Require ~1.5s of data
+            statusDiv.textContent = "Recording failed. Not enough data.";
+            return;
+        }
+        
+        statusDiv.textContent = `COMPLETE! Saving...`;
+        
+        const exerciseId = selectedExercise.id;
+        
+        // Auto-increment set number for the specific exercise
+        setCounts[exerciseId] = (setCounts[exerciseId] || 0) + 1;
+        const currentSet = setCounts[exerciseId];
+        
+        const filename = `${exerciseId}_Set${currentSet}.json`;
+        
+        const dataToSave = {
+            exercise_id: exerciseId,
+            data: sensorData
+        };
+        
+        downloadFile(JSON.stringify(dataToSave), filename, 'application/json');
+        setTimeout(() => { statusDiv.textContent = `Ready: ${selectedExercise.name}`; }, 1500);
+    }
+    
+    function downloadFile(content, fileName, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+    
+    // --- Initialize the App ---
+    init();
+    </script>
+</body>
+</html>
