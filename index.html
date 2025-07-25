@@ -27,7 +27,6 @@
         .sensor-active { background: #00cc00; } .sensor-inactive { background: #cc0000; }
         .summary { background: #2a2a2a; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; font-size: 16px; }
         
-        /* --- Workout Mode for Armband Use --- */
         #changeExerciseBtn { display: none; background: var(--accent-color); margin-top: 15px; }
         .container.workout-mode { justify-content: center; }
         .container.workout-mode .muscle-tabs, .container.workout-mode .exercise-grid,
@@ -64,7 +63,6 @@
     </div>
 
     <script>
-        // --- Configuration & Data ---
         const exercises = {
             chest: [{ id: 'bench_press', name: 'Bench Press' }, { id: 'incline_press', name: 'Incline Press' }, { id: 'dumbbell_press', name: 'Dumbbell Press' }],
             back: [{ id: 'deadlift', name: 'Deadlift' }, { id: 'pull_ups', name: 'Pull Ups' }, { id: 'barbell_row', name: 'Barbell Row' }],
@@ -75,15 +73,19 @@
 
         // --- State ---
         let isRecording = false, isWorkoutMode = false;
-        let selectedExercise = null, sensorData = [], sessionSets = [];
+        let selectedExercise = null, sensorData = [];
         let accelerometer, gyroscope, sensorReadHandler;
+        
+        // --- Persistent State Loaded from Browser Storage ---
         let setCounts = JSON.parse(localStorage.getItem('workoutSetCounts') || '{}');
+        let sessionSets = JSON.parse(localStorage.getItem('workoutSessionSets') || '[]');
 
         // --- DOM Elements & Helpers ---
         const D = id => document.getElementById(id);
         const ui = { container: D('container'), muscleTabs: D('muscleTabs'), exerciseGrid: D('exerciseGrid'), startBtn: D('startBtn'), status: D('status'), summary: D('summary'), accIndicator: D('accIndicator'), gyroIndicator: D('gyroIndicator'), exportAllBtn: D('exportAllBtn') };
         const allExercisesById = Object.values(exercises).flat().reduce((acc, ex) => (acc[ex.id] = ex, acc), {});
         const saveCounts = () => localStorage.setItem('workoutSetCounts', JSON.stringify(setCounts));
+        const saveSession = () => localStorage.setItem('workoutSessionSets', JSON.stringify(sessionSets));
         const vibrate = pattern => navigator.vibrate?.(pattern);
         const download = (data, filename) => {
             const a = document.createElement('a');
@@ -110,11 +112,6 @@
             }
         }
 
-        function renderExercises(muscle) {
-            ui.muscleTabs.querySelectorAll('.muscle-tab').forEach(t => t.classList.toggle('active', t.dataset.muscle === muscle));
-            ui.exerciseGrid.innerHTML = exercises[muscle].map(ex => `<button class="exercise-btn" data-exercise-id="${ex.id}">${ex.name}</button>`).join('');
-        }
-
         // --- Core Logic ---
         function selectMuscle(muscle) {
             isWorkoutMode = false; selectedExercise = null;
@@ -124,7 +121,6 @@
         function selectExercise(exerciseId) {
             selectedExercise = allExercisesById[exerciseId] || null;
             isWorkoutMode = true;
-            ui.exerciseGrid.querySelectorAll('.exercise-btn').forEach(b => b.classList.toggle('selected', b.dataset.exerciseId === exerciseId));
             updateUI();
         }
 
@@ -162,11 +158,19 @@
                 saveCounts();
                 const setData = { exercise_id: exerciseId, exercise_name: exerciseName, set_number: setCounts[exerciseId], timestamp: new Date().toISOString(), sample_count: sensorData.length, has_gyroscope: !!gyroscope, data: sensorData };
                 sessionSets.push(setData);
+                saveSession(); // Persist the session data
                 download(setData, `${exerciseId}_set${setCounts[exerciseId]}.json`);
                 ui.status.textContent = 'SAVED!';
                 vibrate(300);
             }
             setTimeout(() => { if (!isRecording) updateUI(); }, 2000);
+        }
+        
+        function renderExercises(muscle) {
+            ui.muscleTabs.querySelectorAll('.muscle-tab').forEach(t => t.classList.toggle('active', t.dataset.muscle === muscle));
+            ui.exerciseGrid.innerHTML = exercises[muscle].map(ex => `<button class="exercise-btn" data-exercise-id="${ex.id}">${ex.name}</button>`).join('');
+            // When switching muscle groups, unselect any highlighted exercise
+            ui.exerciseGrid.querySelectorAll('.exercise-btn').forEach(b => b.classList.remove('selected'));
         }
 
         async function initSensors() {
@@ -188,27 +192,45 @@
         function init() {
             ui.muscleTabs.innerHTML = Object.keys(exercises).map(m => `<button class="muscle-tab" data-muscle="${m}">${m.toUpperCase()}</button>`).join('');
             ui.muscleTabs.addEventListener('click', e => e.target.matches('.muscle-tab') && selectMuscle(e.target.dataset.muscle));
-            ui.exerciseGrid.addEventListener('click', e => e.target.matches('.exercise-btn') && selectExercise(e.target.dataset.exerciseId));
+            ui.exerciseGrid.addEventListener('click', e => {
+                if (e.target.matches('.exercise-btn')) {
+                    ui.exerciseGrid.querySelectorAll('.exercise-btn').forEach(b => b.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    selectExercise(e.target.dataset.exerciseId);
+                }
+            });
             
             D('startBtn').onclick = () => (isRecording ? stopRecording() : startRecording());
             D('changeExerciseBtn').onclick = () => selectMuscle(document.querySelector('.muscle-tab.active')?.dataset.muscle || 'chest');
             D('exportAllBtn').onclick = () => sessionSets.length && download({ session_timestamp: new Date().toISOString(), total_sets: sessionSets.length, sets: sessionSets }, `session_${Date.now()}.json`);
+            
             D('clearBtn').onclick = () => {
-                if (sessionSets.length > 0 && confirm('Clear all data from this session? (Set counts will be kept)')) {
-                    sessionSets = []; updateUI(); ui.status.textContent = 'Session data cleared.';
+                if (sessionSets.length > 0 && confirm('Clear all data from this session? (Overall set counts will be kept)')) {
+                    sessionSets = [];
+                    saveSession(); // Persist the cleared session
+                    updateUI();
+                    ui.status.textContent = 'Session data cleared.';
                 }
             };
+            
             D('resetBtn').onclick = () => {
-                if (confirm('RESET ALL DATA? This will delete all saved set numbers and session data!')) {
-                    sessionSets = []; setCounts = {}; saveCounts(); isWorkoutMode = false; selectedExercise = null; updateUI(); ui.status.textContent = 'All data has been reset.';
+                if (confirm('RESET ALL DATA? This will delete all saved set numbers and all session data!')) {
+                    sessionSets = []; setCounts = {};
+                    saveSession(); saveCounts();
+                    isWorkoutMode = false; selectedExercise = null;
+                    updateUI();
+                    ui.status.textContent = 'All data has been reset.';
                 }
             };
+            
             D('viewCountsBtn').onclick = () => {
                 const message = Object.entries(setCounts).map(([id, count]) => `${allExercisesById[id]?.name || id}: ${count} sets`).join('\n');
                 alert(Object.keys(setCounts).length ? 'Current Set Numbers:\n\n' + message : 'No exercises recorded yet.');
             };
+
             initSensors();
             selectMuscle('chest');
+            updateUI(); // Initial UI update to show any loaded session data
         }
 
         // Start the application
