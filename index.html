@@ -84,7 +84,6 @@
         const ui = { container: D('container'), muscleTabs: D('muscleTabs'), exerciseGrid: D('exerciseGrid'), startBtn: D('startBtn'), status: D('status'), summary: D('summary'), accIndicator: D('accIndicator'), gyroIndicator: D('gyroIndicator'), exportAllBtn: D('exportAllBtn') };
         const allExercisesById = Object.values(exercises).flat().reduce((acc, ex) => (acc[ex.id] = ex, acc), {});
         const saveCounts = () => localStorage.setItem('workoutSetCounts', JSON.stringify(setCounts));
-        const speak = text => 'speechSynthesis' in window && speechSynthesis.speak(new SpeechSynthesisUtterance(text));
         const vibrate = pattern => navigator.vibrate?.(pattern);
         const download = (data, filename) => {
             const a = document.createElement('a');
@@ -96,11 +95,11 @@
         function updateUI() {
             ui.container.classList.toggle('workout-mode', isWorkoutMode);
             ui.startBtn.classList.toggle('recording', isRecording);
-            ui.startBtn.disabled = !selectedExercise || isRecording;
+            ui.startBtn.disabled = !selectedExercise;
             if (isRecording) ui.startBtn.textContent = 'STOP';
             else if (selectedExercise) ui.startBtn.textContent = 'START';
-            else ui.startBtn.textContent = 'SELECT EXERCISE';
-            ui.status.textContent = isRecording ? 'RECORDING...' : (selectedExercise ? `Ready: ${selectedExercise.name}` : 'Select Exercise');
+            else { ui.startBtn.textContent = 'SELECT EXERCISE'; ui.startBtn.disabled = true; }
+            if (!isRecording) ui.status.textContent = selectedExercise ? `Ready: ${selectedExercise.name}` : 'Select Exercise';
             const hasSets = sessionSets.length > 0;
             ui.exportAllBtn.style.display = hasSets ? 'inline-block' : 'none';
             if (!hasSets) ui.summary.innerHTML = '<div><strong>Session:</strong> No data collected</div>';
@@ -127,13 +126,13 @@
             isWorkoutMode = true;
             ui.exerciseGrid.querySelectorAll('.exercise-btn').forEach(b => b.classList.toggle('selected', b.dataset.exerciseId === exerciseId));
             updateUI();
-            speak(`Ready for ${selectedExercise.name}`);
         }
 
         function startRecording() {
             if (!selectedExercise || !accelerometer) return;
             isRecording = true; sensorData = [];
             const startTime = Date.now();
+            ui.status.textContent = 'RECORDING...';
             sensorReadHandler = () => {
                 const dataPoint = { t: Date.now() - startTime, ax: accelerometer.x, ay: accelerometer.y, az: accelerometer.z };
                 if (gyroscope?.x) Object.assign(dataPoint, { gx: gyroscope.x, gy: gyroscope.y, gz: gyroscope.z });
@@ -142,20 +141,21 @@
             accelerometer.addEventListener('reading', sensorReadHandler);
             gyroscope?.addEventListener('reading', sensorReadHandler);
             accelerometer.start(); gyroscope?.start();
-            vibrate(200); speak('Recording');
+            vibrate(200);
             updateUI();
         }
 
         function stopRecording() {
             if (!isRecording) return;
             isRecording = false;
+            updateUI();
             accelerometer?.removeEventListener('reading', sensorReadHandler);
             gyroscope?.removeEventListener('reading', sensorReadHandler);
             accelerometer?.stop(); gyroscope?.stop();
 
             if (sensorData.length < 100) {
                 ui.status.textContent = 'TOO SHORT';
-                vibrate([100, 50, 100]); speak('Recording too short');
+                vibrate([100, 50, 100]);
             } else {
                 const { id: exerciseId, name: exerciseName } = selectedExercise;
                 setCounts[exerciseId] = (setCounts[exerciseId] || 0) + 1;
@@ -164,9 +164,9 @@
                 sessionSets.push(setData);
                 download(setData, `${exerciseId}_set${setCounts[exerciseId]}.json`);
                 ui.status.textContent = 'SAVED!';
-                vibrate(300); speak('Set saved');
+                vibrate(300);
             }
-            setTimeout(updateUI, 2000);
+            setTimeout(() => { if (!isRecording) updateUI(); }, 2000);
         }
 
         async function initSensors() {
@@ -200,7 +200,7 @@
             };
             D('resetBtn').onclick = () => {
                 if (confirm('RESET ALL DATA? This will delete all saved set numbers and session data!')) {
-                    sessionSets = []; setCounts = {}; saveCounts(); updateUI(); ui.status.textContent = 'All data has been reset.';
+                    sessionSets = []; setCounts = {}; saveCounts(); isWorkoutMode = false; selectedExercise = null; updateUI(); ui.status.textContent = 'All data has been reset.';
                 }
             };
             D('viewCountsBtn').onclick = () => {
