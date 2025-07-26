@@ -5,235 +5,670 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Workout Data Logger - CNN Training</title>
     <style>
-        :root { --accent-color: #0066cc; --record-color: #cc0000; --save-color: #009900; }
-        body { font-family: Arial, sans-serif; background: #1a1a1a; color: #ffffff; margin: 0; padding: 20px; text-align: center; font-size: 18px; }
-        .container { max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; min-height: calc(100vh - 40px); }
-        h2 { margin: 10px 0 15px; font-size: 24px; }
-        .muscle-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
-        .muscle-tab { background: #333; color: #fff; border: 3px solid #555; padding: 20px; border-radius: 12px; cursor: pointer; font-size: 20px; font-weight: bold; }
-        .muscle-tab.active { background: var(--accent-color); border-color: var(--accent-color); }
-        .exercise-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 25px; }
-        .exercise-btn { background: #333; color: #fff; border: 3px solid #555; padding: 25px 15px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; }
-        .exercise-btn.selected { background: var(--save-color); border-color: var(--save-color); }
-        #status { font-size: 22px; margin-bottom: 15px; padding: 15px; background: #2a2a2a; border-radius: 12px; min-height: 30px; }
-        #startBtn { background: var(--save-color); color: white; border: none; padding: 30px; border-radius: 15px; font-size: 24px; font-weight: bold; cursor: pointer; width: 100%; min-height: 100px; transition: background-color 0.3s; }
-        #startBtn:disabled { background: #666; color: #999; }
-        #startBtn.recording { background: var(--record-color); animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
-        .action-btn { background: #444; color: #fff; border: 2px solid #666; padding: 20px 15px; border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        .sensor-status { background: #2a2a2a; border-radius: 12px; padding: 15px; margin-top: auto; font-size: 16px; }
-        .sensor-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 10px; }
-        .sensor-active { background: #00cc00; } .sensor-inactive { background: #cc0000; }
-        .summary { background: #2a2a2a; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; font-size: 16px; }
-        
-        #changeExerciseBtn { display: none; background: var(--accent-color); margin-top: 15px; }
-        .container.workout-mode { justify-content: center; }
-        .container.workout-mode .muscle-tabs, .container.workout-mode .exercise-grid,
-        .container.workout-mode .action-buttons, .container.workout-mode .summary, 
-        .container.workout-mode .sensor-status, .container.workout-mode h2 {
-            display: none;
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
         }
-        .container.workout-mode #status { margin-top: 0; }
-        .container.workout-mode #startBtn { height: 50vh; font-size: 36px; }
-        .container.workout-mode #changeExerciseBtn { display: block; }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        h2 {
+            margin: 20px 0;
+            font-size: 24px;
+        }
+
+        /* HUGE buttons for upper arm use */
+        .muscle-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .muscle-tab {
+            background: #333;
+            color: #fff;
+            border: 3px solid #555;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .muscle-tab.active {
+            background: #0066cc;
+            border-color: #0066cc;
+        }
+
+        .exercise-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .exercise-btn {
+            background: #333;
+            color: #fff;
+            border: 3px solid #555;
+            padding: 25px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .exercise-btn.selected {
+            background: #009900;
+            border-color: #009900;
+        }
+
+        #status {
+            font-size: 22px;
+            margin: 25px 0;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            border: 2px solid #555;
+            min-height: 30px;
+        }
+
+        /* MASSIVE start/stop button */
+        #startBtn {
+            background: #009900;
+            color: white;
+            border: none;
+            padding: 30px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 25px 0;
+            width: 100%;
+            min-height: 100px;
+        }
+
+        #startBtn:disabled {
+            background: #666;
+            color: #999;
+        }
+
+        #startBtn.recording {
+            background: #cc0000;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Big action buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .action-btn {
+            background: #444;
+            color: #fff;
+            border: 2px solid #666;
+            padding: 20px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            min-height: 60px;
+        }
+
+        .sensor-status {
+            background: #2a2a2a;
+            border: 2px solid #555;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+
+        .sensor-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .sensor-active { background: #00cc00; }
+        .sensor-inactive { background: #cc0000; }
+
+        .summary {
+            background: #2a2a2a;
+            border: 2px solid #555;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        .debug {
+            background: #444;
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+            font-family: monospace;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
-    <div class="container" id="container">
+    <div class="container">
         <h2>💪 Data Logger</h2>
+        
         <div class="muscle-tabs" id="muscleTabs"></div>
+        
         <div id="status">Select Exercise</div>
+        
         <div class="exercise-grid" id="exerciseGrid"></div>
+        
         <button id="startBtn" disabled>SELECT EXERCISE</button>
-        <button class="action-btn" id="changeExerciseBtn">Change Exercise</button>
+        
+        <div class="sensor-status">
+            <div>
+                <span class="sensor-indicator" id="accIndicator"></span>
+                Accelerometer
+            </div>
+            <div style="margin-top: 8px;">
+                <span class="sensor-indicator" id="gyroIndicator"></span>
+                Gyroscope
+            </div>
+        </div>
+        
         <div class="action-buttons">
             <button class="action-btn" id="exportAllBtn" style="display:none;">EXPORT ALL</button>
             <button class="action-btn" id="clearBtn">CLEAR SESSION</button>
         </div>
+
         <div class="action-buttons">
             <button class="action-btn" id="resetBtn" style="background: #cc0000;">RESET ALL NUMBERS</button>
             <button class="action-btn" id="viewCountsBtn">VIEW COUNTS</button>
         </div>
-        <div class="summary" id="summary"></div>
-        <div class="sensor-status">
-            <div><span class="sensor-indicator" id="accIndicator"></span>Accelerometer</div>
-            <div style="margin-top: 8px;"><span class="sensor-indicator" id="gyroIndicator"></span>Gyroscope</div>
+
+        <div class="summary" id="summary">
+            <div><strong>Session:</strong> No data collected</div>
+        </div>
+
+        <div class="debug" id="debug" style="display: none;">
+            Debug info will appear here
         </div>
     </div>
 
     <script>
+        // Simple exercise database
         const exercises = {
-            chest: [{ id: 'bench_press', name: 'Bench Press' }, { id: 'incline_dumbbell_press', name: 'Incline Dumbbell Press' }, { id: 'dumbbell_press', name: 'Dumbbell Press' }, { id: 'cable_crossover', name: 'Cable Crossover' }, { id: 'flyes', name: 'Flyes' }],
-            back: [{ id: 'deadlift', name: 'Deadlift' }, { id: 'pull_ups', name: 'Pull Ups' }, { id: 'barbell_row', name: 'Barbell Row' }, { id: 'cable_row', name: 'Cable Row' }, { id: 'lat_pulldown', name: 'Lat Pulldown' }],
-            shoulders: [{ id: 'shoulder_press', name: 'Shoulder Press' }, { id: 'lateral_raise', name: 'Lateral Raise' }, { id: 'rear_delt_fly', name: 'Rear Delt Fly' }],
-            arms: [{ id: 'bicep_cable', name: 'Cable bicep' }, { id: 'hammer_curl', name: 'Hammer Curl' }, { id: 'tricep_extension', name: 'Tricep Overhead Extension' }, { id: 'tricep_pushdown', name: 'Tricep Pushdown' }],
-            legs: [{ id: 'leg_extension', name: 'Leg Extension' }, { id: 'leg_press', name: 'Leg Press' }, { id: 'hamstrings', name: 'Hamstrings' },{ id: 'abs', name: 'Abs' }]
+            chest: [
+                { id: 'bench_press', name: 'Bench Press' },
+                { id: 'incline_press', name: 'Incline Press' },
+                { id: 'dumbbell_press', name: 'Dumbbell Press' },
+                { id: 'chest_fly', name: 'Chest Fly' },
+                { id: 'push_ups', name: 'Push Ups' }
+            ],
+            back: [
+                { id: 'deadlift', name: 'Deadlift' },
+                { id: 'pull_ups', name: 'Pull Ups' },
+                { id: 'barbell_row', name: 'Barbell Row' },
+                { id: 'cable_row', name: 'Cable Row' },
+                { id: 'lat_pulldown', name: 'Lat Pulldown' }
+            ],
+            shoulders: [
+                { id: 'shoulder_press', name: 'Shoulder Press' },
+                { id: 'lateral_raise', name: 'Lateral Raise' },
+                { id: 'rear_delt_fly', name: 'Rear Delt Fly' },
+                { id: 'upright_row', name: 'Upright Row' }
+            ],
+            arms: [
+                { id: 'bicep_curl', name: 'Bicep Curl' },
+                { id: 'hammer_curl', name: 'Hammer Curl' },
+                { id: 'tricep_extension', name: 'Tricep Extension' },
+                { id: 'close_grip_press', name: 'Close Grip Press' }
+            ],
+            legs: [
+                { id: 'squat', name: 'Squat' },
+                { id: 'leg_press', name: 'Leg Press' },
+                { id: 'lunges', name: 'Lunges' },
+                { id: 'leg_curl', name: 'Leg Curl' },
+                { id: 'calf_raise', name: 'Calf Raise' }
+            ]
         };
 
-        // --- State ---
-        let isRecording = false, isWorkoutMode = false;
-        let selectedExercise = null, sensorData = [];
-        let accelerometer, gyroscope, sensorReadHandler;
-        
-        // --- Persistent State Loaded from Browser Storage ---
-        let setCounts = JSON.parse(localStorage.getItem('workoutSetCounts') || '{}');
-        let sessionSets = JSON.parse(localStorage.getItem('workoutSessionSets') || '[]');
+        // State
+        let selectedExercise = null;
+        let recording = false;
+        let sensorData = [];
+        let allSets = [];
+        let accelerometer = null;
+        let gyroscope = null;
+        let setCounts = {};
+        let recordingStartTime = 0;
+        let currentHandlers = { acc: null, gyro: null };
 
-        // --- DOM Elements & Helpers ---
-        const D = id => document.getElementById(id);
-        const ui = { container: D('container'), muscleTabs: D('muscleTabs'), exerciseGrid: D('exerciseGrid'), startBtn: D('startBtn'), status: D('status'), summary: D('summary'), accIndicator: D('accIndicator'), gyroIndicator: D('gyroIndicator'), exportAllBtn: D('exportAllBtn') };
-        const allExercisesById = Object.values(exercises).flat().reduce((acc, ex) => (acc[ex.id] = ex, acc), {});
-        const saveCounts = () => localStorage.setItem('workoutSetCounts', JSON.stringify(setCounts));
-        const saveSession = () => localStorage.setItem('workoutSessionSets', JSON.stringify(sessionSets));
-        const vibrate = pattern => navigator.vibrate?.(pattern);
-        const download = (data, filename) => {
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-            a.download = filename; a.click(); URL.revokeObjectURL(a.href);
-        };
-
-        // --- UI Rendering ---
-        function updateUI() {
-            ui.container.classList.toggle('workout-mode', isWorkoutMode);
-            ui.startBtn.classList.toggle('recording', isRecording);
-            ui.startBtn.disabled = !selectedExercise;
-            if (isRecording) ui.startBtn.textContent = 'STOP';
-            else if (selectedExercise) ui.startBtn.textContent = 'START';
-            else { ui.startBtn.textContent = 'SELECT EXERCISE'; ui.startBtn.disabled = true; }
-            if (!isRecording) ui.status.textContent = selectedExercise ? `Ready: ${selectedExercise.name}` : 'Select Exercise';
-            const hasSets = sessionSets.length > 0;
-            ui.exportAllBtn.style.display = hasSets ? 'inline-block' : 'none';
-            if (!hasSets) ui.summary.innerHTML = '<div><strong>Session:</strong> No data collected</div>';
-            else {
-                const totalSamples = sessionSets.reduce((sum, set) => sum + set.sample_count, 0);
-                const uniqueExercises = [...new Set(sessionSets.map(s => s.exercise_name))];
-                ui.summary.innerHTML = `<div><strong>Session:</strong> ${sessionSets.length} sets</div><div><strong>Exercises:</strong> ${uniqueExercises.join(', ')}</div><div><strong>Total:</strong> ${totalSamples.toLocaleString()} samples</div>`;
+        // Load persistent set counts from storage
+        function loadSetCounts() {
+            try {
+                const stored = localStorage.getItem('workoutSetCounts');
+                setCounts = stored ? JSON.parse(stored) : {};
+                debugLog(`Loaded set counts: ${JSON.stringify(setCounts)}`);
+            } catch (error) {
+                debugLog(`Error loading set counts: ${error.message}`);
+                setCounts = {};
             }
         }
 
-        // --- Core Logic ---
-        function selectMuscle(muscle) {
-            isWorkoutMode = false; selectedExercise = null;
-            renderExercises(muscle); updateUI();
+        // Save set counts to storage
+        function saveSetCounts() {
+            try {
+                localStorage.setItem('workoutSetCounts', JSON.stringify(setCounts));
+                debugLog(`Saved set counts: ${JSON.stringify(setCounts)}`);
+            } catch (error) {
+                debugLog(`Error saving set counts: ${error.message}`);
+            }
         }
 
-        function selectExercise(exerciseId) {
-            selectedExercise = allExercisesById[exerciseId] || null;
-            isWorkoutMode = true;
-            updateUI();
+        // Load session data
+        function loadSessionData() {
+            try {
+                const stored = localStorage.getItem('workoutSessionSets');
+                allSets = stored ? JSON.parse(stored) : [];
+                debugLog(`Loaded session data: ${allSets.length} sets`);
+            } catch (error) {
+                debugLog(`Error loading session data: ${error.message}`);
+                allSets = [];
+            }
         }
 
-        function startRecording() {
-            if (!selectedExercise || !accelerometer) return;
-            isRecording = true; sensorData = [];
-            const startTime = Date.now();
-            ui.status.textContent = 'RECORDING...';
-            sensorReadHandler = () => {
-                const dataPoint = { t: Date.now() - startTime, ax: accelerometer.x, ay: accelerometer.y, az: accelerometer.z };
-                if (gyroscope?.x) Object.assign(dataPoint, { gx: gyroscope.x, gy: gyroscope.y, gz: gyroscope.z });
-                sensorData.push(dataPoint);
-            };
-            accelerometer.addEventListener('reading', sensorReadHandler);
-            gyroscope?.addEventListener('reading', sensorReadHandler);
-            accelerometer.start(); gyroscope?.start();
-            vibrate(200);
-            updateUI();
+        // Save session data
+        function saveSessionData() {
+            try {
+                localStorage.setItem('workoutSessionSets', JSON.stringify(allSets));
+                debugLog(`Saved session data: ${allSets.length} sets`);
+            } catch (error) {
+                debugLog(`Error saving session data: ${error.message}`);
+            }
         }
 
-        function stopRecording() {
-            if (!isRecording) return;
-            isRecording = false;
-            updateUI();
-            accelerometer?.removeEventListener('reading', sensorReadHandler);
-            gyroscope?.removeEventListener('reading', sensorReadHandler);
-            accelerometer?.stop(); gyroscope?.stop();
+        // Debug logging
+        function debugLog(message) {
+            console.log(`[DEBUG] ${message}`);
+            const debugDiv = document.getElementById('debug');
+            if (debugDiv) {
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+                // Keep only last 10 debug messages
+                const messages = debugDiv.children;
+                if (messages.length > 10) {
+                    debugDiv.removeChild(messages[0]);
+                }
+            }
+        }
 
-            if (sensorData.length < 100) {
-                ui.status.textContent = 'TOO SHORT';
-                vibrate([100, 50, 100]);
+        // DOM elements
+        const startBtn = document.getElementById('startBtn');
+        const status = document.getElementById('status');
+        const exerciseGrid = document.getElementById('exerciseGrid');
+        const muscleTabs = document.getElementById('muscleTabs');
+        const exportAllBtn = document.getElementById('exportAllBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const viewCountsBtn = document.getElementById('viewCountsBtn');
+        const summary = document.getElementById('summary');
+        const accIndicator = document.getElementById('accIndicator');
+        const gyroIndicator = document.getElementById('gyroIndicator');
+
+        // Initialize
+        function init() {
+            loadSetCounts();
+            loadSessionData();
+            setupMuscleTabs();
+            selectMuscle('chest');
+            initSensors();
+            setupEvents();
+            updateSummary();
+        }
+
+        function setupMuscleTabs() {
+            muscleTabs.innerHTML = '';
+            Object.keys(exercises).forEach(muscle => {
+                const btn = document.createElement('button');
+                btn.className = 'muscle-tab';
+                btn.textContent = muscle.toUpperCase();
+                btn.dataset.muscle = muscle;
+                btn.onclick = () => selectMuscle(muscle, btn);
+                muscleTabs.appendChild(btn);
+            });
+        }
+
+        function selectMuscle(muscle, tabBtn = null) {
+            // Update active tab
+            document.querySelectorAll('.muscle-tab').forEach(t => t.classList.remove('active'));
+            if (tabBtn) {
+                tabBtn.classList.add('active');
             } else {
-                const { id: exerciseId, name: exerciseName } = selectedExercise;
-                setCounts[exerciseId] = (setCounts[exerciseId] || 0) + 1;
-                saveCounts();
-                const setData = { exercise_id: exerciseId, exercise_name: exerciseName, set_number: setCounts[exerciseId], timestamp: new Date().toISOString(), sample_count: sensorData.length, has_gyroscope: !!gyroscope, data: sensorData };
-                sessionSets.push(setData);
-                saveSession(); // Persist the session data
-                download(setData, `${exerciseId}_set${setCounts[exerciseId]}.json`);
-                ui.status.textContent = 'SAVED!';
-                vibrate(300);
+                const tab = document.querySelector(`[data-muscle="${muscle}"]`);
+                if (tab) tab.classList.add('active');
             }
-            setTimeout(() => { if (!isRecording) updateUI(); }, 2000);
+            
+            // Show exercises
+            exerciseGrid.innerHTML = '';
+            exercises[muscle].forEach(ex => {
+                const btn = document.createElement('button');
+                btn.className = 'exercise-btn';
+                btn.textContent = ex.name;
+                btn.onclick = () => selectExercise(ex, btn);
+                exerciseGrid.appendChild(btn);
+            });
+            
+            resetSelection();
         }
-        
-        function renderExercises(muscle) {
-            ui.muscleTabs.querySelectorAll('.muscle-tab').forEach(t => t.classList.toggle('active', t.dataset.muscle === muscle));
-            ui.exerciseGrid.innerHTML = exercises[muscle].map(ex => `<button class="exercise-btn" data-exercise-id="${ex.id}">${ex.name}</button>`).join('');
-            // When switching muscle groups, unselect any highlighted exercise
-            ui.exerciseGrid.querySelectorAll('.exercise-btn').forEach(b => b.classList.remove('selected'));
+
+        function selectExercise(exercise, exerciseBtn = null) {
+            document.querySelectorAll('.exercise-btn').forEach(b => b.classList.remove('selected'));
+            if (exerciseBtn) {
+                exerciseBtn.classList.add('selected');
+            }
+            
+            selectedExercise = exercise;
+            startBtn.disabled = false;
+            startBtn.textContent = `START ${exercise.name.toUpperCase()}`;
+            status.textContent = `Ready: ${exercise.name}`;
+            debugLog(`Selected exercise: ${exercise.name} (${exercise.id})`);
+        }
+
+        function resetSelection() {
+            selectedExercise = null;
+            startBtn.disabled = true;
+            startBtn.textContent = 'SELECT EXERCISE';
+            status.textContent = 'Select Exercise';
         }
 
         async function initSensors() {
-            const setup = async (name, indicator) => {
-                try {
-                    if (name in window) {
-                        const sensor = new window[name]({ frequency: 60 });
-                        indicator.className = 'sensor-indicator sensor-active';
-                        return sensor;
-                    }
-                } catch (error) { console.error(`${name} setup failed:`, error); }
-                indicator.className = 'sensor-indicator sensor-inactive';
-                return null;
-            };
-            [accelerometer, gyroscope] = await Promise.all([setup('Accelerometer', ui.accIndicator), setup('Gyroscope', ui.gyroIndicator)]);
+            try {
+                if ('Accelerometer' in window) {
+                    accelerometer = new Accelerometer({ frequency: 60 });
+                    accelerometer.addEventListener('error', e => {
+                        debugLog(`Accelerometer error: ${e.error}`);
+                    });
+                    accIndicator.className = 'sensor-indicator sensor-active';
+                    debugLog('Accelerometer initialized');
+                } else {
+                    accIndicator.className = 'sensor-indicator sensor-inactive';
+                    debugLog('Accelerometer not available');
+                }
+
+                if ('Gyroscope' in window) {
+                    gyroscope = new Gyroscope({ frequency: 60 });
+                    gyroscope.addEventListener('error', e => {
+                        debugLog(`Gyroscope error: ${e.error}`);
+                    });
+                    gyroIndicator.className = 'sensor-indicator sensor-active';
+                    debugLog('Gyroscope initialized');
+                } else {
+                    gyroIndicator.className = 'sensor-indicator sensor-inactive';
+                    debugLog('Gyroscope not available');
+                }
+            } catch (error) {
+                debugLog(`Sensor init failed: ${error.message}`);
+                accIndicator.className = 'sensor-indicator sensor-inactive';
+                gyroIndicator.className = 'sensor-indicator sensor-inactive';
+            }
         }
 
-        // --- Initial Setup ---
-        function init() {
-            ui.muscleTabs.innerHTML = Object.keys(exercises).map(m => `<button class="muscle-tab" data-muscle="${m}">${m.toUpperCase()}</button>`).join('');
-            ui.muscleTabs.addEventListener('click', e => e.target.matches('.muscle-tab') && selectMuscle(e.target.dataset.muscle));
-            ui.exerciseGrid.addEventListener('click', e => {
-                if (e.target.matches('.exercise-btn')) {
-                    ui.exerciseGrid.querySelectorAll('.exercise-btn').forEach(b => b.classList.remove('selected'));
-                    e.target.classList.add('selected');
-                    selectExercise(e.target.dataset.exerciseId);
+        function setupEvents() {
+            startBtn.onclick = toggleRecording;
+            exportAllBtn.onclick = exportAll;
+            clearBtn.onclick = clearSession;
+            resetBtn.onclick = resetAllData;
+            viewCountsBtn.onclick = showSetCounts;
+        }
+
+        function toggleRecording() {
+            if (recording) stopRecording();
+            else startRecording();
+        }
+
+        function startRecording() {
+            if (!selectedExercise || !accelerometer) {
+                debugLog('Cannot start recording: no exercise or no accelerometer');
+                return;
+            }
+            
+            recording = true;
+            sensorData = [];
+            recordingStartTime = Date.now();
+            
+            startBtn.textContent = 'STOP RECORDING';
+            startBtn.classList.add('recording');
+            status.textContent = 'RECORDING...';
+            
+            debugLog(`Started recording for ${selectedExercise.name}`);
+            
+            // Vibrate to confirm start
+            navigator.vibrate && navigator.vibrate(200);
+            
+            // Create fresh event handlers to avoid conflicts
+            currentHandlers.acc = () => {
+                if (!recording) return;
+                const now = Date.now();
+                const dataPoint = {
+                    t: now - recordingStartTime,
+                    ax: accelerometer.x,
+                    ay: accelerometer.y,
+                    az: accelerometer.z
+                };
+
+                if (gyroscope && gyroscope.x !== undefined) {
+                    dataPoint.gx = gyroscope.x;
+                    dataPoint.gy = gyroscope.y;
+                    dataPoint.gz = gyroscope.z;
                 }
+
+                sensorData.push(dataPoint);
+            };
+            
+            // Start sensors with fresh handlers
+            accelerometer.addEventListener('reading', currentHandlers.acc);
+            accelerometer.start();
+            
+            if (gyroscope) {
+                // Gyroscope uses same handler since it adds to same data point
+                gyroscope.addEventListener('reading', currentHandlers.acc);
+                gyroscope.start();
+            }
+        }
+
+        function stopRecording() {
+            if (!recording) return;
+            
+            recording = false;
+            debugLog(`Stopping recording. Collected ${sensorData.length} samples`);
+            
+            // Stop sensors and clean up handlers
+            if (accelerometer && currentHandlers.acc) {
+                accelerometer.removeEventListener('reading', currentHandlers.acc);
+                accelerometer.stop();
+            }
+            if (gyroscope && currentHandlers.acc) {
+                gyroscope.removeEventListener('reading', currentHandlers.acc);
+                gyroscope.stop();
+            }
+            
+            startBtn.textContent = `START ${selectedExercise.name.toUpperCase()}`;
+            startBtn.classList.remove('recording');
+            
+            if (sensorData.length < 100) {
+                status.textContent = 'TOO SHORT - TRY AGAIN';
+                navigator.vibrate && navigator.vibrate([100, 100, 100]);
+                debugLog('Recording too short, discarding');
+                return;
+            }
+            
+            status.textContent = 'SAVED!';
+            navigator.vibrate && navigator.vibrate(300);
+            
+            // Save set
+            const exerciseId = selectedExercise.id;
+            setCounts[exerciseId] = (setCounts[exerciseId] || 0) + 1;
+            saveSetCounts();
+            
+            const setData = {
+                exercise_id: exerciseId,
+                exercise_name: selectedExercise.name,
+                set_number: setCounts[exerciseId],
+                timestamp: new Date().toISOString(),
+                sample_count: sensorData.length,
+                has_gyroscope: !!gyroscope,
+                data: sensorData
+            };
+            
+            allSets.push(setData);
+            saveSessionData(); // Save session immediately
+            
+            debugLog(`Saved set: ${exerciseId} set ${setCounts[exerciseId]} with ${sensorData.length} samples`);
+            
+            // Auto download
+            downloadJSON(setData, `${exerciseId}_set${setCounts[exerciseId]}.json`);
+            
+            updateSummary();
+            exportAllBtn.style.display = 'inline-block';
+            
+            setTimeout(() => {
+                status.textContent = `Ready: ${selectedExercise.name}`;
+            }, 2000);
+        }
+
+        function downloadJSON(data, filename) {
+            try {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                debugLog(`Downloaded: ${filename}`);
+            } catch (error) {
+                debugLog(`Download failed: ${error.message}`);
+            }
+        }
+
+        function exportAll() {
+            if (!allSets.length) {
+                debugLog('No sets to export');
+                return;
+            }
+            
+            const sessionData = {
+                session_timestamp: new Date().toISOString(),
+                total_sets: allSets.length,
+                exercises: [...new Set(allSets.map(s => s.exercise_name))],
+                sets: allSets
+            };
+            
+            debugLog(`Exporting session with ${allSets.length} sets`);
+            downloadJSON(sessionData, `session_${Date.now()}.json`);
+        }
+
+        function clearSession() {
+            if (allSets.length > 0 && !confirm('Clear session data only? (Set numbers will be kept)')) return;
+            
+            allSets = [];
+            saveSessionData();
+            exportAllBtn.style.display = 'none';
+            updateSummary();
+            status.textContent = 'Session data cleared';
+            debugLog('Session data cleared');
+        }
+
+        function resetAllData() {
+            if (!confirm('RESET ALL DATA? This will delete all set numbers and session data!')) return;
+            
+            allSets = [];
+            setCounts = {};
+            saveSessionData();
+            saveSetCounts();
+            exportAllBtn.style.display = 'none';
+            updateSummary();
+            status.textContent = 'All data reset';
+            debugLog('All data reset');
+        }
+
+        function showSetCounts() {
+            if (Object.keys(setCounts).length === 0) {
+                alert('No exercises recorded yet.');
+                return;
+            }
+            
+            let message = 'Current Set Numbers:\n\n';
+            Object.entries(setCounts).forEach(([exerciseId, count]) => {
+                const exerciseName = getExerciseName(exerciseId);
+                message += `${exerciseName}: ${count} sets\n`;
             });
             
-            D('startBtn').onclick = () => (isRecording ? stopRecording() : startRecording());
-            D('changeExerciseBtn').onclick = () => selectMuscle(document.querySelector('.muscle-tab.active')?.dataset.muscle || 'chest');
-            D('exportAllBtn').onclick = () => sessionSets.length && download({ session_timestamp: new Date().toISOString(), total_sets: sessionSets.length, sets: sessionSets }, `session_${Date.now()}.json`);
-            
-            D('clearBtn').onclick = () => {
-                if (sessionSets.length > 0 && confirm('Clear all data from this session? (Overall set counts will be kept)')) {
-                    sessionSets = [];
-                    saveSession(); // Persist the cleared session
-                    updateUI();
-                    ui.status.textContent = 'Session data cleared.';
-                }
-            };
-            
-            D('resetBtn').onclick = () => {
-                if (confirm('RESET ALL DATA? This will delete all saved set numbers and all session data!')) {
-                    sessionSets = []; setCounts = {};
-                    saveSession(); saveCounts();
-                    isWorkoutMode = false; selectedExercise = null;
-                    updateUI();
-                    ui.status.textContent = 'All data has been reset.';
-                }
-            };
-            
-            D('viewCountsBtn').onclick = () => {
-                const message = Object.entries(setCounts).map(([id, count]) => `${allExercisesById[id]?.name || id}: ${count} sets`).join('\n');
-                alert(Object.keys(setCounts).length ? 'Current Set Numbers:\n\n' + message : 'No exercises recorded yet.');
-            };
-
-            initSensors();
-            selectMuscle('chest');
-            updateUI(); // Initial UI update to show any loaded session data
+            alert(message);
         }
 
-        // Start the application
+        function getExerciseName(exerciseId) {
+            for (const muscle in exercises) {
+                const exercise = exercises[muscle].find(ex => ex.id === exerciseId);
+                if (exercise) return exercise.name;
+            }
+            return exerciseId;
+        }
+
+        function updateSummary() {
+            if (!allSets.length) {
+                summary.innerHTML = '<div><strong>Session:</strong> No data collected</div>';
+                return;
+            }
+            
+            const totalSamples = allSets.reduce((sum, set) => sum + set.sample_count, 0);
+            const exercisesList = [...new Set(allSets.map(s => s.exercise_name))];
+            
+            let html = `<div><strong>Session:</strong> ${allSets.length} sets</div>`;
+            html += `<div><strong>Exercises:</strong> ${exercisesList.join(', ')}</div>`;
+            html += `<div><strong>Total samples:</strong> ${totalSamples.toLocaleString()}</div>`;
+            
+            // Show detailed breakdown
+            html += '<hr style="margin: 10px 0; border-color: #555;">';
+            allSets.forEach((set, i) => {
+                html += `<div style="font-size: 14px; margin: 5px 0;">`;
+                html += `${i + 1}. ${set.exercise_name} Set ${set.set_number} (${set.sample_count} samples)`;
+                html += `</div>`;
+            });
+            
+            summary.innerHTML = html;
+        }
+
+        // Start the app
         init();
     </script>
 </body>
