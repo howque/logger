@@ -168,7 +168,6 @@
             <div class="sensor-status">
                 <span><span class="sensor-dot inactive" id="accDot"></span>Accelerometer</span>
                 <span><span class="sensor-dot inactive" id="gyroDot"></span>Gyroscope</span>
-                <span><span class="sensor-dot inactive" id="magDot"></span>Magnetometer</span>
             </div>
         </div>
 
@@ -233,7 +232,7 @@
             }
 
             // --- SENSORS & HANDLERS ---
-            let sensors = { acc: null, gyro: null, mag: null };
+            let sensors = { acc: null, gyro: null };
             let handlers = {};
 
             // --- DOM ELEMENTS ---
@@ -345,16 +344,8 @@
                         debugLog("Gyroscope initialized");
                     }
                     
-                    if ('Magnetometer' in window) {
-                        sensors.mag = new Magnetometer(options);
-                        sensors.mag.onreading = () => handleReading('mag');
-                        sensors.mag.onerror = (e) => debugLog(`Magnetometer error: ${e.error.name}`, 'error');
-                        document.getElementById('magDot').className = 'sensor-dot active';
-                        debugLog("Magnetometer initialized");
-                    }
-                    
                     // Check if any sensors are available
-                    if (!sensors.acc && !sensors.gyro && !sensors.mag) {
+                    if (!sensors.acc && !sensors.gyro) {
                         debugLog("No sensors available", 'error');
                         elements.errorMessage.style.display = 'block';
                     } else {
@@ -507,11 +498,7 @@
                     dataPoint.gy = sensors.gyro.y; 
                     dataPoint.gz = sensors.gyro.z; 
                 }
-                if (sensors.mag?.x != null) { 
-                    dataPoint.mx = sensors.mag.x; 
-                    dataPoint.my = sensors.mag.y; 
-                    dataPoint.mz = sensors.mag.z; 
-                }
+
                 return dataPoint;
             }
 
@@ -545,6 +532,7 @@
                     elements.actualRepDisplay.textContent = state.actualReps;
                     elements.postWorkout.classList.add('show');
                     elements.recordingControls.style.display = 'none'; // Hide recording controls
+                    elements.repSection.style.display = 'none'; // Hide planned reps section
                     updateUI();
                     navigator.vibrate?.([100, 50, 100]);
                     debugLog(`Recording stopped. Samples: ${state.sensorData.length}. Awaiting rep confirmation.`);
@@ -626,6 +614,7 @@
                 state.tempSet = null; // Clear the temporary set
                 elements.postWorkout.classList.remove('show');
                 elements.recordingControls.style.display = 'block'; // Show recording controls again
+                elements.repSection.style.display = 'block'; // Show planned reps section again
                 elements.status.textContent = 'Set saved! Ready for next one.';
                 updateUI();
                 navigator.vibrate?.(300);
