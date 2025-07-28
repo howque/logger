@@ -39,13 +39,13 @@
             background: #2c2c2c;
             color: #e0e0e0;
             border: 2px solid #444;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 600;
             text-align: center;
-            min-height: 55px;
+            min-height: 70px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -68,8 +68,8 @@
         }
 
         #startBtn {
-            width: 100%; padding: 25px; font-size: 20px; border-radius: 12px;
-            margin: 20px 0; min-height: 80px; font-weight: 700;
+            width: 100%; padding: 30px; font-size: 24px; border-radius: 15px;
+            margin: 20px 0; min-height: 100px; font-weight: 700;
         }
         #startBtn:disabled { background: #444; color: #777; border-color: #555; cursor: not-allowed; }
         #startBtn.recording { animation: pulse 1.5s infinite ease-in-out; }
@@ -222,7 +222,7 @@
         </div>
 
         <div class="grid-2" style="margin-top: 15px;">
-            <button class="btn green" id="exportBtn" style="display: none;">📤 EXPORT FULL SESSION</button>
+            <button class="btn green" id="exportBtn">📤 EXPORT FULL SESSION</button>
             <button class="btn red" id="clearAllBtn">🗑️ CLEAR ALL</button>
         </div>
         <button class="btn" id="toggleDebugBtn" style="margin-top: 10px; width: 100%;">Toggle Debug</button>
@@ -483,7 +483,6 @@
                 elements.status.textContent = ready ?
                     `Ready: ${state.exerciseName} - ${state.position.replace('_', ' ')} (${state.plannedReps} reps)`:
                     'Select Position & Muscle Group';
-                elements.exportBtn.style.display = state.allSets.length > 0 ? 'block' : 'none';
                 elements.summaryText.textContent = state.allSets.length > 0 ? `${state.allSets.length} set(s)` : 'No sets';
                 
                 // Update indicators
@@ -492,11 +491,17 @@
             }
             
             function checkSensorsAvailable() {
+                // More lenient check for GitHub deployment
                 if (!sensors.acc && !sensors.gyro && !sensors.mag) {
-                    elements.errorMessage.style.display = 'block';
-                    elements.startBtn.disabled = true;
-                    elements.status.textContent = 'No motion sensors available on this device';
-                    return false;
+                    // Try to initialize sensors again
+                    initSensors();
+                    
+                    // If still no sensors, show warning but don't block
+                    if (!sensors.acc && !sensors.gyro && !sensors.mag) {
+                        elements.errorMessage.style.display = 'block';
+                        elements.status.textContent = 'Sensors may not be available - try anyway';
+                        return true; // Allow to continue
+                    }
                 }
                 elements.errorMessage.style.display = 'none';
                 return true;
@@ -617,9 +622,16 @@
             }
 
             function saveSet() {
-                if (!state.tempSet) return;
+                debugLog('Save button clicked');
+                if (!state.tempSet) {
+                    debugLog('No temp set to save!', 'error');
+                    return;
+                }
+                
                 state.tempSet.actualReps = state.actualReps;
                 state.tempSet.sessionTime = new Date().toISOString();
+                
+                debugLog(`Saving set: ${state.tempSet.exerciseName} with ${state.actualReps} reps`);
                 
                 // Keep set in memory for full session export and summary
                 state.allSets.push(state.tempSet);
@@ -645,7 +657,11 @@
             }
 
             function exportFullSession() {
-                if (state.allSets.length === 0) return;
+                debugLog('Export button clicked');
+                if (state.allSets.length === 0) {
+                    debugLog('No sets to export!', 'error');
+                    return;
+                }
                 const dataStr = JSON.stringify(state.allSets, null, 2);
                 const blob = new Blob([dataStr], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
