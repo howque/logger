@@ -3,32 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Advanced Workout Logger</title>
+    <title>Workout Logger</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: #121212;
-            color: #e0e0e0;
-            margin: 0;
-            padding: 15px;
-            font-size: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #121212; color: #e0e0e0; margin: 0; padding: 15px; font-size: 16px;
         }
-        .container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
+        .container { max-width: 600px; margin: 0 auto; }
         h2 { text-align: center; margin: 15px 0; font-size: 24px; color: #fff; }
 
         .section {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 15px 0;
+            background: #1e1e1e; border: 1px solid #333; border-radius: 12px;
+            padding: 15px; margin: 15px 0;
         }
         .section-title {
-            font-weight: 600;
-            color: #33aaff;
-            margin-bottom: 12px;
-            font-size: 18px;
+            font-weight: 600; color: #33aaff; margin-bottom: 12px; font-size: 18px;
         }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -36,20 +26,10 @@
         .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 
         .btn {
-            background: #2c2c2c;
-            color: #e0e0e0;
-            border: 2px solid #444;
-            padding: 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: 600;
-            text-align: center;
-            min-height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s, border-color 0.2s;
+            background: #2c2c2c; color: #e0e0e0; border: 2px solid #444;
+            padding: 20px; border-radius: 10px; cursor: pointer; font-size: 18px;
+            font-weight: 600; text-align: center; min-height: 70px; display: flex;
+            align-items: center; justify-content: center; transition: all 0.2s;
         }
         .btn:active { background: #444; }
         .btn.selected { background: #007bff; border-color: #007bff; color: #fff; }
@@ -60,11 +40,11 @@
         .counter { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; }
         .counter-btn {
             background: #444; color: #fff; border: none; border-radius: 50%;
-            width: 50px; height: 50px; font-size: 28px; line-height: 50px; cursor: pointer;
+            width: 60px; height: 60px; font-size: 32px; line-height: 60px; cursor: pointer;
         }
         .counter-display {
-            background: #007bff; color: #fff; padding: 10px 25px; border-radius: 8px;
-            font-size: 28px; font-weight: 700; min-width: 70px; text-align: center;
+            background: #007bff; color: #fff; padding: 15px 30px; border-radius: 8px;
+            font-size: 32px; font-weight: 700; min-width: 80px; text-align: center;
         }
 
         #startBtn {
@@ -72,11 +52,11 @@
             margin: 20px 0; min-height: 100px; font-weight: 700;
         }
         #startBtn:disabled { background: #444; color: #777; border-color: #555; cursor: not-allowed; }
-        #startBtn.recording { animation: pulse 1.5s infinite ease-in-out; }
+        #startBtn.recording { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.7; } }
 
-        .sensor-status { display: flex; justify-content: space-around; font-size: 14px; }
-        .sensor-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .sensor-status { display: flex; justify-content: space-around; font-size: 16px; }
+        .sensor-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
         .sensor-dot.active { background: #28a745; }
         .sensor-dot.inactive { background: #dc3545; }
 
@@ -86,29 +66,17 @@
         }
         .post-workout.show { display: block; }
         .post-workout h3 { color: #fd7e14; text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 24px; }
-        .large-counter .counter-btn { width: 70px; height: 70px; font-size: 40px; line-height: 70px; }
-        .large-counter .counter-display { font-size: 42px; padding: 15px 30px; border-radius: 12px; }
 
         #status {
             background: #2a2a2a; border: 1px solid #444; padding: 15px; border-radius: 8px;
             text-align: center; margin: 15px 0; font-size: 18px; min-height: 54px;
         }
         
-        .data-quality {
-            background: #1a1a1a; border: 2px solid #333; padding: 10px; border-radius: 8px;
-            margin: 10px 0; font-size: 14px;
+        .error-message {
+            background: #dc3545; color: white; padding: 10px; border-radius: 8px;
+            margin: 10px 0; font-size: 14px; display: none;
         }
-        .quality-indicator {
-            display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px;
-        }
-        .quality-good { background: #28a745; }
-        .quality-warning { background: #ffc107; }
-        .quality-poor { background: #dc3545; }
         
-        .exercise-tips {
-            background: #1e1e1e; border-left: 4px solid #007bff; padding: 15px; margin: 15px 0;
-            font-size: 14px; line-height: 1.4;
-        }
         .recording-indicator {
             position: fixed; top: 20px; right: 20px; background: #dc3545;
             color: white; padding: 10px 15px; border-radius: 8px; font-weight: bold;
@@ -120,18 +88,12 @@
             color: black; padding: 10px 15px; border-radius: 8px; font-weight: bold;
             display: none; z-index: 1000;
         }
-        
-        .error-message {
-            background: #dc3545; color: white; padding: 10px; border-radius: 8px;
-            margin: 10px 0; font-size: 14px; display: none;
-        }
-        
+
         #debugPanel {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: rgba(0,0,0,0.9); border-top: 1px solid #444;
             max-height: 150px; overflow-y: scroll; padding: 10px;
-            font-family: monospace; font-size: 12px; display: none;
-            z-index: 100;
+            font-family: monospace; font-size: 12px; display: none; z-index: 100;
         }
         #debugPanel div { margin-bottom: 5px; }
         #debugPanel .time { color: #00aaff; }
@@ -142,7 +104,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>🚀 Advanced Workout Logger</h2>
+        <h2>🏋️ Workout Logger</h2>
 
         <div class="section">
             <div class="section-title">1. Phone Position</div>
@@ -177,12 +139,6 @@
 
         <div id="status">Select Position & Muscle Group</div>
         
-        <div class="data-quality">
-            <span class="quality-indicator quality-good"></span>
-            <strong>Data Quality:</strong> <span id="qualityText">Good</span>
-            <br><small>Sensor readings are stable and consistent</small>
-        </div>
-        
         <div class="error-message" id="errorMessage">
             ⚠️ Sensor error: No motion sensors available on this device.
         </div>
@@ -190,8 +146,8 @@
         <button id="startBtn" class="btn" disabled>SELECT CONFIGURATION</button>
 
         <div class="post-workout" id="postWorkout">
-            <h3>🏠 Confirm Reps</h3>
-            <div class="counter large-counter">
+            <h3>✅ Confirm Reps</h3>
+            <div class="counter">
                 <button class="counter-btn btn red" id="actualRepMinusBtn">−</button>
                 <div class="counter-display" id="actualRepDisplay">10</div>
                 <button class="counter-btn btn green" id="actualRepPlusBtn">+</button>
@@ -201,30 +157,25 @@
                  <button class="btn">12</button><button class="btn">15</button>
             </div>
             <div class="grid-2">
-                <button class="btn green" id="saveSetBtn">✅ SAVE SET & DOWNLOAD</button>
+                <button class="btn green" id="saveSetBtn">💾 SAVE SET</button>
                 <button class="btn red" id="discardSetBtn">❌ DISCARD</button>
             </div>
         </div>
         
-        <div class="grid-2">
-             <div class="section">
-                <div class="section-title">📊 Sensors</div>
-                <div class="sensor-status">
-                    <span><span class="sensor-dot inactive" id="accDot"></span>A</span>
-                    <span><span class="sensor-dot inactive" id="gyroDot"></span>G</span>
-                    <span><span class="sensor-dot inactive" id="magDot"></span>M</span>
-                </div>
-            </div>
-             <div class="section">
-                <div class="section-title">📈 Session</div>
-                <div id="summaryText">No sets</div>
+        <div class="section">
+            <div class="section-title">📊 Sensors</div>
+            <div class="sensor-status">
+                <span><span class="sensor-dot inactive" id="accDot"></span>Accelerometer</span>
+                <span><span class="sensor-dot inactive" id="gyroDot"></span>Gyroscope</span>
+                <span><span class="sensor-dot inactive" id="magDot"></span>Magnetometer</span>
             </div>
         </div>
 
-        <div class="grid-2" style="margin-top: 15px;">
-            <button class="btn green" id="exportBtn">📤 EXPORT FULL SESSION</button>
-            <button class="btn red" id="clearAllBtn">🗑️ CLEAR ALL</button>
+        <div class="section">
+            <div class="section-title">📈 Session</div>
+            <div id="summaryText">No sets recorded</div>
         </div>
+
         <button class="btn" id="toggleDebugBtn" style="margin-top: 10px; width: 100%;">Toggle Debug</button>
     </div>
 
@@ -267,7 +218,8 @@
                 position: null, muscle: null, exercise: null, exerciseName: null,
                 plannedReps: 10, actualReps: 10,
                 recording: false, calibrating: false,
-                sensorData: [], baselineData: [], tempSet: null, allSets: [], startTime: 0
+                sensorData: [], baselineData: [], tempSet: null, allSets: [], startTime: 0,
+                setCounter: {} // Track set numbers per exercise
             };
 
             // --- SENSORS & HANDLERS ---
@@ -285,7 +237,6 @@
                 repDisplay: document.getElementById('repDisplay'),
                 postWorkout: document.getElementById('postWorkout'),
                 actualRepDisplay: document.getElementById('actualRepDisplay'),
-                exportBtn: document.getElementById('exportBtn'),
                 summaryText: document.getElementById('summaryText'),
                 debugPanel: document.getElementById('debugPanel'),
                 upperBtn: document.getElementById('upperBtn'),
@@ -314,7 +265,6 @@
                 generateMuscleButtons();
                 setupEventListeners();
                 initSensors();
-                checkSensorsAvailable();
                 updateUI();
                 debugLog("Initialization complete.");
             }
@@ -356,8 +306,6 @@
                 });
                 document.getElementById('saveSetBtn').onclick = saveSet;
                 document.getElementById('discardSetBtn').onclick = discardSet;
-                elements.exportBtn.onclick = exportFullSession;
-                document.getElementById('clearAllBtn').onclick = clearAll;
                 elements.toggleDebugBtn.onclick = () => {
                     const isHidden = elements.debugPanel.style.display === 'none';
                     elements.debugPanel.style.display = isHidden ? 'block' : 'none';
@@ -366,37 +314,46 @@
             }
 
             async function initSensors() {
-                // Implementation from previous correct versions
-                 const options = { frequency: 60 };
+                debugLog("Initializing sensors...");
+                const options = { frequency: 60 };
+                
                 try {
-                    if (!navigator.permissions) {
-                         throw new Error('Permissions API not supported.');
-                    }
-                    const permission = await navigator.permissions.query({ name: 'accelerometer' });
-                    if (permission.state === 'denied') {
-                        throw new Error('Sensor permission was denied. Please grant permission in browser settings.');
-                    }
+                    // Simple sensor initialization without permissions check
                     if ('Accelerometer' in window) {
                         sensors.acc = new Accelerometer(options);
                         sensors.acc.onreading = () => handleReading('acc');
-                        sensors.acc.onerror = (e) => debugLog(`Accelerometer error: ${e.error.name} - ${e.error.message}`, 'error');
+                        sensors.acc.onerror = (e) => debugLog(`Accelerometer error: ${e.error.name}`, 'error');
                         document.getElementById('accDot').className = 'sensor-dot active';
+                        debugLog("Accelerometer initialized");
                     }
+                    
                     if ('Gyroscope' in window) {
                         sensors.gyro = new Gyroscope(options);
                         sensors.gyro.onreading = () => handleReading('gyro');
+                        sensors.gyro.onerror = (e) => debugLog(`Gyroscope error: ${e.error.name}`, 'error');
                         document.getElementById('gyroDot').className = 'sensor-dot active';
+                        debugLog("Gyroscope initialized");
                     }
+                    
                     if ('Magnetometer' in window) {
                         sensors.mag = new Magnetometer(options);
                         sensors.mag.onreading = () => handleReading('mag');
+                        sensors.mag.onerror = (e) => debugLog(`Magnetometer error: ${e.error.name}`, 'error');
                         document.getElementById('magDot').className = 'sensor-dot active';
+                        debugLog("Magnetometer initialized");
                     }
-                    debugLog("Sensors initialized successfully.");
+                    
+                    // Check if any sensors are available
+                    if (!sensors.acc && !sensors.gyro && !sensors.mag) {
+                        debugLog("No sensors available", 'error');
+                        elements.errorMessage.style.display = 'block';
+                    } else {
+                        debugLog("Sensors initialized successfully");
+                        elements.errorMessage.style.display = 'none';
+                    }
                 } catch (e) {
                     debugLog(`Sensor initialization failed: ${e.message}`, 'error');
-                    elements.status.textContent = 'Sensor permission may be denied.';
-                    document.querySelectorAll('.sensor-dot').forEach(dot => dot.className = 'sensor-dot inactive');
+                    elements.errorMessage.style.display = 'block';
                 }
             }
 
@@ -483,28 +440,11 @@
                 elements.status.textContent = ready ?
                     `Ready: ${state.exerciseName} - ${state.position.replace('_', ' ')} (${state.plannedReps} reps)`:
                     'Select Position & Muscle Group';
-                elements.summaryText.textContent = state.allSets.length > 0 ? `${state.allSets.length} set(s)` : 'No sets';
+                elements.summaryText.textContent = state.allSets.length > 0 ? `${state.allSets.length} set(s) recorded` : 'No sets recorded';
                 
                 // Update indicators
                 elements.recordingIndicator.style.display = state.recording ? 'block' : 'none';
                 elements.calibrationIndicator.style.display = state.calibrating ? 'block' : 'none';
-            }
-            
-            function checkSensorsAvailable() {
-                // More lenient check for GitHub deployment
-                if (!sensors.acc && !sensors.gyro && !sensors.mag) {
-                    // Try to initialize sensors again
-                    initSensors();
-                    
-                    // If still no sensors, show warning but don't block
-                    if (!sensors.acc && !sensors.gyro && !sensors.mag) {
-                        elements.errorMessage.style.display = 'block';
-                        elements.status.textContent = 'Sensors may not be available - try anyway';
-                        return true; // Allow to continue
-                    }
-                }
-                elements.errorMessage.style.display = 'none';
-                return true;
             }
 
             // --- RECORDING & SENSOR HANDLING ---
@@ -519,10 +459,7 @@
             }
             
             async function startRecordingSequence() {
-                if (!checkSensorsAvailable()) {
-                    debugLog('No motion sensors available!', 'error');
-                    return;
-                }
+                debugLog("Starting recording sequence...");
                 
                 state.calibrating = true;
                 updateUI();
@@ -536,8 +473,10 @@
                         else { clearInterval(interval); resolve(); }
                     }, 1000);
                 });
+                
                 await collectBaseline();
                 debugLog(`Baseline collected: ${state.baselineData.length} samples.`);
+                
                 state.calibrating = false;
                 state.recording = true;
                 state.sensorData = [];
@@ -546,7 +485,18 @@
                 elements.status.textContent = `RECORDING...`;
                 navigator.vibrate?.(200);
                 debugLog(`Recording started for ${state.exerciseName}.`);
-                Object.values(sensors).forEach(s => s?.start());
+                
+                // Start sensors
+                Object.values(sensors).forEach(s => {
+                    if (s) {
+                        try {
+                            s.start();
+                            debugLog("Sensor started");
+                        } catch (e) {
+                            debugLog(`Failed to start sensor: ${e.message}`, 'error');
+                        }
+                    }
+                });
             }
             
             function collectBaseline() {
@@ -555,10 +505,29 @@
                     const baselineStartTime = Date.now();
                     const baselineHandler = () => state.baselineData.push(createDataPoint(baselineStartTime));
                     Object.keys(sensors).forEach(key => handlers[key] = baselineHandler);
-                    Object.values(sensors).forEach(s => s?.start());
+                    
+                    // Start sensors for baseline
+                    Object.values(sensors).forEach(s => {
+                        if (s) {
+                            try {
+                                s.start();
+                            } catch (e) {
+                                debugLog(`Failed to start sensor for baseline: ${e.message}`, 'error');
+                            }
+                        }
+                    });
+                    
                     setTimeout(() => {
                         Object.keys(sensors).forEach(key => handlers[key] = null);
-                        Object.values(sensors).forEach(s => s?.stop());
+                        Object.values(sensors).forEach(s => {
+                            if (s) {
+                                try {
+                                    s.stop();
+                                } catch (e) {
+                                    debugLog(`Failed to stop sensor: ${e.message}`, 'error');
+                                }
+                            }
+                        });
                         resolve();
                     }, 3000);
                 });
@@ -585,18 +554,32 @@
             }
 
             function stopRecording() {
+                debugLog("Stopping recording...");
                 state.recording = false;
                 const recordingHandler = () => state.sensorData.push(createDataPoint(state.startTime));
                 Object.keys(sensors).forEach(key => handlers[key] = recordingHandler);
 
-                setTimeout(() => { // Let it capture the last few readings
-                     Object.values(sensors).forEach(s => s?.stop());
-                     Object.keys(sensors).forEach(key => handlers[key] = null);
+                setTimeout(() => {
+                    Object.values(sensors).forEach(s => {
+                        if (s) {
+                            try {
+                                s.stop();
+                            } catch (e) {
+                                debugLog(`Failed to stop sensor: ${e.message}`, 'error');
+                            }
+                        }
+                    });
+                    Object.keys(sensors).forEach(key => handlers[key] = null);
 
                     state.tempSet = {
-                        setId: 'set_' + Date.now(), exerciseId: state.exercise, exerciseName: state.exerciseName, phonePosition: state.position,
-                        plannedReps: state.plannedReps, recordingDuration: Date.now() - state.startTime,
-                        baselineData: [...state.baselineData], sensorData: [...state.sensorData],
+                        setId: 'set_' + Date.now(), 
+                        exerciseId: state.exercise, 
+                        exerciseName: state.exerciseName, 
+                        phonePosition: state.position,
+                        plannedReps: state.plannedReps, 
+                        recordingDuration: Date.now() - state.startTime,
+                        baselineData: [...state.baselineData], 
+                        sensorData: [...state.sensorData],
                     };
                     elements.actualRepDisplay.textContent = state.actualReps;
                     elements.postWorkout.classList.add('show');
@@ -607,18 +590,47 @@
             }
 
             // --- DATA MANAGEMENT ---
+            function getNextSetNumber(exerciseId) {
+                if (!state.setCounter[exerciseId]) {
+                    state.setCounter[exerciseId] = 0;
+                }
+                state.setCounter[exerciseId]++;
+                return state.setCounter[exerciseId];
+            }
+
             function exportSetToFile(setObject) {
-                if (!setObject) return;
-                const dataStr = JSON.stringify(setObject, null, 2);
+                if (!setObject) {
+                    debugLog("No set object to export", 'error');
+                    return;
+                }
+                
+                const setNumber = getNextSetNumber(setObject.exerciseId);
+                const fileName = `${setObject.exerciseId}_set${setNumber}.json`;
+                
+                // Create the JSON data with proper structure for training
+                const jsonData = {
+                    exercise: setObject.exerciseId,
+                    exercise_name: setObject.exerciseName,
+                    reps: setObject.actualReps,
+                    planned_reps: setObject.plannedReps,
+                    phone_position: setObject.phonePosition,
+                    recording_duration: setObject.recordingDuration,
+                    session_time: setObject.sessionTime,
+                    set_number: setNumber,
+                    data: setObject.sensorData
+                };
+                
+                const dataStr = JSON.stringify(jsonData, null, 2);
                 const blob = new Blob([dataStr], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.download = `set_${setObject.exerciseId}_${setObject.setId}.json`;
+                a.download = fileName;
+                a.href = url;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                debugLog(`Single set file exported: ${a.download}`);
+                debugLog(`Set exported: ${fileName}`);
             }
 
             function saveSet() {
@@ -633,10 +645,10 @@
                 
                 debugLog(`Saving set: ${state.tempSet.exerciseName} with ${state.actualReps} reps`);
                 
-                // Keep set in memory for full session export and summary
+                // Keep set in memory for summary
                 state.allSets.push(state.tempSet);
 
-                // <<-- AUTOMATIC EXPORT HAPPENS HERE -->>
+                // Export individual set file
                 exportSetToFile(state.tempSet);
                 
                 debugLog(`Set saved & downloaded: ${state.tempSet.exerciseName} - ${state.tempSet.actualReps} reps.`);
@@ -654,31 +666,6 @@
                 elements.status.textContent = 'Set discarded.';
                 debugLog('Set discarded by user.', 'error');
                 updateUI();
-            }
-
-            function exportFullSession() {
-                debugLog('Export button clicked');
-                if (state.allSets.length === 0) {
-                    debugLog('No sets to export!', 'error');
-                    return;
-                }
-                const dataStr = JSON.stringify(state.allSets, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.download = `workout_log_FULL-SESSION_${Date.now()}.json`;
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                debugLog(`Exported full session with ${state.allSets.length} sets.`);
-            }
-            
-            function clearAll() {
-                if (confirm('Clear all recorded sets? This cannot be undone.')) {
-                    state.allSets = []; state.tempSet = null;
-                    elements.postWorkout.classList.remove('show');
-                    updateUI();
-                    debugLog('All session data has been cleared.', 'error');
-                }
             }
 
             init();
