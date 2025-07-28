@@ -116,7 +116,7 @@
         
         <div class="section">
             <div class="section-title">2. Muscle Group</div>
-            <div class="grid-3" id="muscleGrid"></div>
+            <div class="grid-2" id="muscleGrid"></div>
         </div>
 
         <div class="section" id="exerciseSection" style="display: none;">
@@ -156,9 +156,8 @@
                  <button class="btn">8</button><button class="btn">10</button>
                  <button class="btn">12</button><button class="btn">15</button>
             </div>
-            <div class="grid-2">
-                <button class="btn green" id="saveSetBtn">💾 SAVE SET</button>
-                <button class="btn red" id="discardSetBtn">❌ DISCARD</button>
+            <div style="text-align: center;">
+                <button class="btn green" id="saveSetBtn" style="width: 100%; font-size: 20px; padding: 25px;">💾 SAVE SET</button>
             </div>
         </div>
         
@@ -314,7 +313,6 @@
                     if(e.target.tagName === 'BUTTON') setActualReps(parseInt(e.target.textContent));
                 });
                 document.getElementById('saveSetBtn').onclick = saveSet;
-                document.getElementById('discardSetBtn').onclick = discardSet;
                 elements.toggleDebugBtn.onclick = () => {
                     const isHidden = elements.debugPanel.style.display === 'none';
                     elements.debugPanel.style.display = isHidden ? 'block' : 'none';
@@ -465,16 +463,8 @@
             async function startRecordingSequence() {
                 debugLog("Starting recording sequence...");
                 
-                // Start recording immediately - no calibration delay
-                state.recording = true;
-                state.sensorData = [];
-                state.startTime = Date.now();
-                updateUI();
-                elements.status.textContent = `RECORDING...`;
-                navigator.vibrate?.(200);
-                debugLog(`Recording started for ${state.exerciseName}.`);
-                
-                // Start sensors immediately
+                // Start sensors first to ensure they're ready
+                debugLog("Activating sensors...");
                 Object.values(sensors).forEach(s => {
                     if (s) {
                         try {
@@ -485,6 +475,19 @@
                         }
                     }
                 });
+                
+                // Small delay to ensure gyroscope is active
+                await new Promise(resolve => setTimeout(resolve, 500));
+                debugLog("Sensors activated, starting recording...");
+                
+                // Start recording
+                state.recording = true;
+                state.sensorData = [];
+                state.startTime = Date.now();
+                updateUI();
+                elements.status.textContent = `RECORDING...`;
+                navigator.vibrate?.(200);
+                debugLog(`Recording started for ${state.exerciseName}.`);
             }
             
             // Baseline collection removed - we capture all real-world noise now
@@ -623,13 +626,7 @@
                 navigator.vibrate?.(300);
             }
             
-            function discardSet() {
-                state.tempSet = null;
-                elements.postWorkout.classList.remove('show');
-                elements.status.textContent = 'Set discarded.';
-                debugLog('Set discarded by user.', 'error');
-                updateUI();
-            }
+            // Discard function removed - no longer needed
 
             init();
         });
