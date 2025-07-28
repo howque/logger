@@ -143,7 +143,9 @@
             ⚠️ Sensor error: No motion sensors available on this device.
         </div>
 
-        <button id="startBtn" class="btn" disabled>SELECT CONFIGURATION</button>
+        <div id="recordingControls">
+            <button id="startBtn" class="btn" disabled>SELECT CONFIGURATION</button>
+        </div>
 
         <div class="post-workout" id="postWorkout">
             <h3>✅ Confirm Reps</h3>
@@ -252,7 +254,8 @@
                 toggleDebugBtn: document.getElementById('toggleDebugBtn'),
                 recordingIndicator: document.getElementById('recordingIndicator'),
                 calibrationIndicator: document.getElementById('calibrationIndicator'),
-                errorMessage: document.getElementById('errorMessage')
+                errorMessage: document.getElementById('errorMessage'),
+                recordingControls: document.getElementById('recordingControls')
             };
             
             // --- DEBUGGING ---
@@ -541,6 +544,7 @@
                     };
                     elements.actualRepDisplay.textContent = state.actualReps;
                     elements.postWorkout.classList.add('show');
+                    elements.recordingControls.style.display = 'none'; // Hide recording controls
                     updateUI();
                     navigator.vibrate?.([100, 50, 100]);
                     debugLog(`Recording stopped. Samples: ${state.sensorData.length}. Awaiting rep confirmation.`);
@@ -621,6 +625,7 @@
                 
                 state.tempSet = null; // Clear the temporary set
                 elements.postWorkout.classList.remove('show');
+                elements.recordingControls.style.display = 'block'; // Show recording controls again
                 elements.status.textContent = 'Set saved! Ready for next one.';
                 updateUI();
                 navigator.vibrate?.(300);
