@@ -109,39 +109,6 @@
             background: #1e1e1e; border-left: 4px solid #007bff; padding: 15px; margin: 15px 0;
             font-size: 14px; line-height: 1.4;
         }
-        .exercise-tips h4 { color: #007bff; margin-top: 0; margin-bottom: 10px; }
-        
-        .session-info {
-            background: #1e1e1e; border: 2px solid #28a745; padding: 15px; margin: 15px 0;
-            border-radius: 8px; font-size: 14px;
-        }
-        .session-info h4 { color: #28a745; margin-top: 0; margin-bottom: 10px; }
-        
-        .exercise-progress {
-            background: #1e1e1e; border: 2px solid #fd7e14; padding: 15px; margin: 15px 0;
-            border-radius: 8px; font-size: 14px;
-        }
-        .exercise-progress h4 { color: #fd7e14; margin-top: 0; margin-bottom: 10px; }
-        
-        .progress-bar {
-            background: #333; height: 8px; border-radius: 4px; margin: 10px 0;
-            overflow: hidden;
-        }
-        .progress-fill {
-            background: linear-gradient(90deg, #28a745, #20c997); height: 100%;
-            transition: width 0.3s ease;
-        }
-        
-        .quick-actions {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0;
-        }
-        .quick-action-btn {
-            background: #2c2c2c; color: #e0e0e0; border: 1px solid #444;
-            padding: 8px; border-radius: 6px; font-size: 12px; cursor: pointer;
-            text-align: center;
-        }
-        .quick-action-btn:hover { background: #444; }
-        
         .recording-indicator {
             position: fixed; top: 20px; right: 20px; background: #dc3545;
             color: white; padding: 10px 15px; border-radius: 8px; font-weight: bold;
@@ -154,7 +121,7 @@
             display: none; z-index: 1000;
         }
         
-        .data-quality-warning {
+        .error-message {
             background: #dc3545; color: white; padding: 10px; border-radius: 8px;
             margin: 10px 0; font-size: 14px; display: none;
         }
@@ -216,29 +183,8 @@
             <br><small>Sensor readings are stable and consistent</small>
         </div>
         
-        <div class="exercise-tips" id="exerciseTips" style="display: none;">
-            <h4>💡 Exercise Tips</h4>
-            <div id="tipsContent"></div>
-        </div>
-        
-        <div class="session-info" id="sessionInfo" style="display: none;">
-            <h4>📊 Session Progress</h4>
-            <div id="sessionStats"></div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="sessionProgress"></div>
-            </div>
-        </div>
-        
-        <div class="exercise-progress" id="exerciseProgress" style="display: none;">
-            <h4>🎯 Exercise Progress</h4>
-            <div id="exerciseStats"></div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="exerciseProgressBar"></div>
-            </div>
-        </div>
-        
-        <div class="data-quality-warning" id="dataQualityWarning">
-            ⚠️ Data quality issues detected. Check phone position and sensor readings.
+        <div class="error-message" id="errorMessage">
+            ⚠️ Sensor error: No motion sensors available on this device.
         </div>
 
         <button id="startBtn" class="btn" disabled>SELECT CONFIGURATION</button>
@@ -291,30 +237,29 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- DATA & CONSTANTS ---
             const exercises = {
-                chest: { 'bench_press': 'Bench Press', 'incline_dumbbell_press': 'Incline Dumbbell Press', 'cable_crossover': 'Cable Crossover' },
-                back: { 'barbell_row': 'Barbell Row', 'cable_row': 'Cable Row' },
-                shoulders: { 'shoulder_press': 'Shoulder Press' },
-                arms: { 'hammer_curl': 'Hammer Curl' }
-            };
-            
-            const exerciseTips = {
-                'hammer_curl': 'Keep elbows at sides, curl dumbbells up and down in controlled motion',
-                'bench_press': 'Lie flat, lower bar to chest, push up explosively',
-                'cable_crossover': 'Stand with cables at shoulder height, cross arms in front',
-                'barbell_row': 'Bend at waist, pull bar to lower chest, control descent',
-                'cable_row': 'Sit upright, pull handles to waist, squeeze shoulder blades',
-                'incline_dumbbell_press': 'Lie on incline bench, press dumbbells up and down',
-                'shoulder_press': 'Stand or sit, press weights overhead, control descent'
-            };
-            
-            const sessionGoals = {
-                'hammer_curl': { sets: 5, reps: 12 },
-                'bench_press': { sets: 5, reps: 10 },
-                'cable_crossover': { sets: 4, reps: 12 },
-                'barbell_row': { sets: 5, reps: 10 },
-                'cable_row': { sets: 4, reps: 12 },
-                'incline_dumbbell_press': { sets: 4, reps: 10 },
-                'shoulder_press': { sets: 4, reps: 10 }
+                chest: { 
+                    'bench_press': 'Bench Press', 
+                    'dumbbell_press': 'Dumbbell Press', 
+                    'incline_dumbbell_press': 'Incline Dumbbell Press', 
+                    'cable_flyes': 'Cable Flyes', 
+                    'cable_crossover': 'Cable Crossover' 
+                },
+                back: { 
+                    'cable_row': 'Cable Row', 
+                    'lat_pulldown': 'Lat Pulldown', 
+                    'bent_over_row': 'Bent Over Row' 
+                },
+                shoulders: { 
+                    'shoulder_press': 'Shoulder Press', 
+                    'lateral_raises': 'Lateral Raises', 
+                    'rear_delts': 'Rear Delts' 
+                },
+                arms: { 
+                    'hammer_curl': 'Hammer Curl', 
+                    'bicep_cable': 'Bicep Cable', 
+                    'tricep_overhead_extension': 'Tricep Overhead Extension', 
+                    'tricep_pushdown': 'Tricep Pushdown' 
+                }
             };
 
             // --- STATE MANAGEMENT ---
@@ -322,9 +267,7 @@
                 position: null, muscle: null, exercise: null, exerciseName: null,
                 plannedReps: 10, actualReps: 10,
                 recording: false, calibrating: false,
-                sensorData: [], baselineData: [], tempSet: null, allSets: [], startTime: 0,
-                sessionStartTime: null, currentExerciseSets: 0, dataQualityScore: 100,
-                lastDataCheck: 0, sensorReadings: { acc: 0, gyro: 0, mag: 0 }
+                sensorData: [], baselineData: [], tempSet: null, allSets: [], startTime: 0
             };
 
             // --- SENSORS & HANDLERS ---
@@ -348,19 +291,9 @@
                 upperBtn: document.getElementById('upperBtn'),
                 forearmBtn: document.getElementById('forearmBtn'),
                 toggleDebugBtn: document.getElementById('toggleDebugBtn'),
-                exerciseTips: document.getElementById('exerciseTips'),
-                tipsContent: document.getElementById('tipsContent'),
-                sessionInfo: document.getElementById('sessionInfo'),
-                sessionStats: document.getElementById('sessionStats'),
-                sessionProgress: document.getElementById('sessionProgress'),
-                exerciseProgress: document.getElementById('exerciseProgress'),
-                exerciseStats: document.getElementById('exerciseStats'),
-                exerciseProgressBar: document.getElementById('exerciseProgressBar'),
-                dataQualityWarning: document.getElementById('dataQualityWarning'),
                 recordingIndicator: document.getElementById('recordingIndicator'),
                 calibrationIndicator: document.getElementById('calibrationIndicator'),
-                qualityText: document.getElementById('qualityText'),
-                qualityIndicator: document.querySelector('.quality-indicator')
+                errorMessage: document.getElementById('errorMessage')
             };
             
             // --- DEBUGGING ---
@@ -381,6 +314,7 @@
                 generateMuscleButtons();
                 setupEventListeners();
                 initSensors();
+                checkSensorsAvailable();
                 updateUI();
                 debugLog("Initialization complete.");
             }
@@ -502,19 +436,6 @@
                 document.querySelectorAll('#exerciseGrid .btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 elements.repSection.style.display = 'block';
-                
-                // Show exercise tips
-                if (exerciseTips[id]) {
-                    elements.tipsContent.innerHTML = `
-                        <p><strong>Form:</strong> ${exerciseTips[id]}</p>
-                        <p><strong>Target:</strong> ${sessionGoals[id]?.sets || 5} sets of ${sessionGoals[id]?.reps || 10} reps</p>
-                        <p><strong>Phone Position:</strong> Keep phone secure and stable during movement</p>
-                    `;
-                    elements.exerciseTips.style.display = 'block';
-                } else {
-                    elements.exerciseTips.style.display = 'none';
-                }
-                
                 updateUI();
             }
 
@@ -568,92 +489,17 @@
                 // Update indicators
                 elements.recordingIndicator.style.display = state.recording ? 'block' : 'none';
                 elements.calibrationIndicator.style.display = state.calibrating ? 'block' : 'none';
-                
-                // Update session info
-                updateSessionInfo();
-                updateExerciseProgress();
-                updateDataQuality();
             }
             
-            function updateSessionInfo() {
-                if (state.allSets.length > 0) {
-                    const sessionDuration = state.sessionStartTime ? 
-                        Math.floor((Date.now() - state.sessionStartTime) / 60000) : 0;
-                    const totalReps = state.allSets.reduce((sum, set) => sum + set.actualReps, 0);
-                    
-                    elements.sessionStats.innerHTML = `
-                        <strong>Session:</strong> ${sessionDuration} min | 
-                        <strong>Sets:</strong> ${state.allSets.length} | 
-                        <strong>Total Reps:</strong> ${totalReps}
-                    `;
-                    
-                    const progress = Math.min(100, (state.allSets.length / 20) * 100); // Target 20 sets
-                    elements.sessionProgress.style.width = `${progress}%`;
-                    elements.sessionInfo.style.display = 'block';
-                } else {
-                    elements.sessionInfo.style.display = 'none';
+            function checkSensorsAvailable() {
+                if (!sensors.acc && !sensors.gyro && !sensors.mag) {
+                    elements.errorMessage.style.display = 'block';
+                    elements.startBtn.disabled = true;
+                    elements.status.textContent = 'No motion sensors available on this device';
+                    return false;
                 }
-            }
-            
-            function updateExerciseProgress() {
-                if (state.exercise && sessionGoals[state.exercise]) {
-                    const goal = sessionGoals[state.exercise];
-                    const currentSets = state.allSets.filter(set => set.exerciseId === state.exercise).length;
-                    const progress = Math.min(100, (currentSets / goal.sets) * 100);
-                    
-                    elements.exerciseStats.innerHTML = `
-                        <strong>${state.exerciseName}:</strong> ${currentSets}/${goal.sets} sets | 
-                        <strong>Target:</strong> ${goal.reps} reps per set
-                    `;
-                    elements.exerciseProgressBar.style.width = `${progress}%`;
-                    elements.exerciseProgress.style.display = 'block';
-                } else {
-                    elements.exerciseProgress.style.display = 'none';
-                }
-            }
-            
-            function updateDataQuality() {
-                const now = Date.now();
-                if (now - state.lastDataCheck > 5000) { // Check every 5 seconds
-                    state.lastDataCheck = now;
-                    
-                    // Calculate data quality score
-                    let qualityScore = 100;
-                    let qualityText = 'Good';
-                    let qualityClass = 'quality-good';
-                    
-                    // Check sensor readings
-                    const totalReadings = Object.values(state.sensorReadings).reduce((sum, val) => sum + val, 0);
-                    if (totalReadings < 100) {
-                        qualityScore -= 30;
-                        qualityText = 'Poor';
-                        qualityClass = 'quality-poor';
-                    } else if (totalReadings < 500) {
-                        qualityScore -= 15;
-                        qualityText = 'Fair';
-                        qualityClass = 'quality-warning';
-                    }
-                    
-                    // Check for sensor stability
-                    if (state.sensorData.length > 10) {
-                        const recentData = state.sensorData.slice(-10);
-                        const accValues = recentData.map(d => Math.sqrt(d.ax**2 + d.ay**2 + d.az**2));
-                        const mean = accValues.reduce((sum, val) => sum + val, 0) / accValues.length;
-                        const variance = accValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / accValues.length;
-                        if (variance > 5) {
-                            qualityScore -= 20;
-                            qualityText = 'Unstable';
-                            qualityClass = 'quality-warning';
-                        }
-                    }
-                    
-                    state.dataQualityScore = qualityScore;
-                    elements.qualityText.textContent = qualityText;
-                    elements.qualityIndicator.className = `quality-indicator ${qualityClass}`;
-                    
-                    // Show warning if quality is poor
-                    elements.dataQualityWarning.style.display = qualityScore < 70 ? 'block' : 'none';
-                }
+                elements.errorMessage.style.display = 'none';
+                return true;
             }
 
             // --- RECORDING & SENSOR HANDLING ---
@@ -668,12 +514,9 @@
             }
             
             async function startRecordingSequence() {
-                if (!sensors.acc) { debugLog('Accelerometer not available!', 'error'); return; }
-                
-                // Start session timer if first set
-                if (state.allSets.length === 0) {
-                    state.sessionStartTime = Date.now();
-                    debugLog("Session started");
+                if (!checkSensorsAvailable()) {
+                    debugLog('No motion sensors available!', 'error');
+                    return;
                 }
                 
                 state.calibrating = true;
@@ -722,19 +565,16 @@
                     dataPoint.ax = sensors.acc.x; 
                     dataPoint.ay = sensors.acc.y; 
                     dataPoint.az = sensors.acc.z; 
-                    state.sensorReadings.acc++;
                 }
                 if (sensors.gyro?.x != null) { 
                     dataPoint.gx = sensors.gyro.x; 
                     dataPoint.gy = sensors.gyro.y; 
                     dataPoint.gz = sensors.gyro.z; 
-                    state.sensorReadings.gyro++;
                 }
                 if (sensors.mag?.x != null) { 
                     dataPoint.mx = sensors.mag.x; 
                     dataPoint.my = sensors.mag.y; 
                     dataPoint.mz = sensors.mag.z; 
-                    state.sensorReadings.mag++;
                 }
                 return dataPoint;
             }
@@ -780,9 +620,6 @@
                 if (!state.tempSet) return;
                 state.tempSet.actualReps = state.actualReps;
                 state.tempSet.sessionTime = new Date().toISOString();
-                state.tempSet.dataQualityScore = state.dataQualityScore;
-                state.tempSet.sensorReadings = { ...state.sensorReadings };
-                state.tempSet.setNumber = state.allSets.filter(set => set.exerciseId === state.exercise).length + 1;
                 
                 // Keep set in memory for full session export and summary
                 state.allSets.push(state.tempSet);
@@ -791,9 +628,6 @@
                 exportSetToFile(state.tempSet);
                 
                 debugLog(`Set saved & downloaded: ${state.tempSet.exerciseName} - ${state.tempSet.actualReps} reps.`);
-                
-                // Reset sensor readings for next set
-                state.sensorReadings = { acc: 0, gyro: 0, mag: 0 };
                 
                 state.tempSet = null; // Clear the temporary set
                 elements.postWorkout.classList.remove('show');
