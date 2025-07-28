@@ -221,6 +221,15 @@
                 sensorData: [], baselineData: [], tempSet: null, allSets: [], startTime: 0,
                 setCounter: {} // Track set numbers per exercise
             };
+            
+            // Check existing files to determine next set number
+            function checkExistingFiles(exerciseId) {
+                // This is a simple check - in real implementation you'd check actual files
+                // For now, we'll use localStorage to track set numbers across sessions
+                const key = `setCounter_${exerciseId}`;
+                const existingCount = localStorage.getItem(key);
+                return existingCount ? parseInt(existingCount) : 0;
+            }
 
             // --- SENSORS & HANDLERS ---
             let sensors = { acc: null, gyro: null, mag: null };
@@ -423,11 +432,7 @@
             function updateUI() {
                 const ready = state.position && state.muscle && state.exercise;
                 elements.startBtn.disabled = !ready;
-                if (state.calibrating) {
-                    elements.startBtn.textContent = 'CALIBRATING...';
-                    elements.startBtn.className = 'btn orange';
-                    elements.startBtn.disabled = true;
-                } else if (state.recording) {
+                if (state.recording) {
                     elements.startBtn.textContent = 'STOP RECORDING';
                     elements.startBtn.className = 'btn red recording';
                 } else if (ready) {
@@ -444,7 +449,6 @@
                 
                 // Update indicators
                 elements.recordingIndicator.style.display = state.recording ? 'block' : 'none';
-                elements.calibrationIndicator.style.display = state.calibrating ? 'block' : 'none';
             }
 
             // --- RECORDING & SENSOR HANDLING ---
@@ -461,23 +465,7 @@
             async function startRecordingSequence() {
                 debugLog("Starting recording sequence...");
                 
-                state.calibrating = true;
-                updateUI();
-                debugLog("Starting 3s calibration...");
-                await new Promise(resolve => {
-                    let countdown = 3;
-                    elements.status.textContent = `Hold still... ${countdown}`;
-                    const interval = setInterval(() => {
-                        countdown--;
-                        if (countdown > 0) elements.status.textContent = `Hold still... ${countdown}`;
-                        else { clearInterval(interval); resolve(); }
-                    }, 1000);
-                });
-                
-                await collectBaseline();
-                debugLog(`Baseline collected: ${state.baselineData.length} samples.`);
-                
-                state.calibrating = false;
+                // Start recording immediately - no calibration delay
                 state.recording = true;
                 state.sensorData = [];
                 state.startTime = Date.now();
@@ -486,7 +474,7 @@
                 navigator.vibrate?.(200);
                 debugLog(`Recording started for ${state.exerciseName}.`);
                 
-                // Start sensors
+                // Start sensors immediately
                 Object.values(sensors).forEach(s => {
                     if (s) {
                         try {
@@ -499,39 +487,7 @@
                 });
             }
             
-            function collectBaseline() {
-                return new Promise(resolve => {
-                    state.baselineData = [];
-                    const baselineStartTime = Date.now();
-                    const baselineHandler = () => state.baselineData.push(createDataPoint(baselineStartTime));
-                    Object.keys(sensors).forEach(key => handlers[key] = baselineHandler);
-                    
-                    // Start sensors for baseline
-                    Object.values(sensors).forEach(s => {
-                        if (s) {
-                            try {
-                                s.start();
-                            } catch (e) {
-                                debugLog(`Failed to start sensor for baseline: ${e.message}`, 'error');
-                            }
-                        }
-                    });
-                    
-                    setTimeout(() => {
-                        Object.keys(sensors).forEach(key => handlers[key] = null);
-                        Object.values(sensors).forEach(s => {
-                            if (s) {
-                                try {
-                                    s.stop();
-                                } catch (e) {
-                                    debugLog(`Failed to stop sensor: ${e.message}`, 'error');
-                                }
-                            }
-                        });
-                        resolve();
-                    }, 3000);
-                });
-            }
+            // Baseline collection removed - we capture all real-world noise now
 
             function createDataPoint(startTime) {
                 const dataPoint = { t: Date.now() - startTime };
@@ -578,7 +534,6 @@
                         phonePosition: state.position,
                         plannedReps: state.plannedReps, 
                         recordingDuration: Date.now() - state.startTime,
-                        baselineData: [...state.baselineData], 
                         sensorData: [...state.sensorData],
                     };
                     elements.actualRepDisplay.textContent = state.actualReps;
@@ -591,11 +546,19 @@
 
             // --- DATA MANAGEMENT ---
             function getNextSetNumber(exerciseId) {
-                if (!state.setCounter[exerciseId]) {
-                    state.setCounter[exerciseId] = 0;
-                }
-                state.setCounter[exerciseId]++;
-                return state.setCounter[exerciseId];
+                // Check existing files first
+                const existingCount = checkExistingFiles(exerciseId);
+                
+                // Use the higher of existing count or current session count
+                const currentCount = state.setCounter[exerciseId] || 0;
+                const nextNumber = Math.max(existingCount, currentCount) + 1;
+                
+                // Update both session counter and localStorage
+                state.setCounter[exerciseId] = nextNumber;
+                localStorage.setItem(`setCounter_${exerciseId}`, nextNumber.toString());
+                
+                debugLog(`Set number for ${exerciseId}: ${nextNumber} (existing: ${existingCount}, current: ${currentCount})`);
+                return nextNumber;
             }
 
             function exportSetToFile(setObject) {
