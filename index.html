@@ -137,6 +137,19 @@
             </div>
         </div>
 
+        <div class="section" id="weightSection" style="display: none;">
+            <div class="section-title">5. Weight (kg)</div>
+            <div class="counter">
+                <button class="counter-btn" id="weightMinusBtn">−</button>
+                <div class="counter-display" id="weightDisplay">0</div>
+                <button class="counter-btn" id="weightPlusBtn">+</button>
+            </div>
+            <div class="grid-4" id="quickWeightBtns">
+                <button class="btn">0</button><button class="btn">10</button>
+                <button class="btn">20</button><button class="btn">30</button>
+            </div>
+        </div>
+
         <div id="status">Select Position & Muscle Group</div>
         
         <div class="error-message" id="errorMessage">
@@ -188,35 +201,39 @@
         document.addEventListener('DOMContentLoaded', () => {
             // --- DATA & CONSTANTS ---
             const exercises = {
-                chest: { 
-                    'bench_press': 'Bench Press', 
-                    'dumbbell_press': 'Dumbbell Press', 
-                    'incline_dumbbell_press': 'Incline Dumbbell Press', 
-                    'cable_flyes': 'Cable Flyes', 
-                    'cable_crossover': 'Cable Crossover' 
+                chest: {
+                    'cable_crossover': 'Cable Crossover',
+                    'incline_dumbbell_press': 'Incline Dumbbell Press',
+                    'bench_press': 'Bench Press',
+                    'dumbbell_press': 'Dumbbell Press',
+                    'push_ups': 'Push Ups'
                 },
-                back: { 
-                    'cable_row': 'Cable Row', 
-                    'lat_pulldown': 'Lat Pulldown', 
-                    'bent_over_row': 'Bent Over Row' 
+                back: {
+                    'cable_row': 'Cable Row',
+                    'barbell_row': 'Barbell Row',
+                    'lat_pulldown': 'Lat Pulldown',
                 },
-                shoulders: { 
-                    'shoulder_press': 'Shoulder Press', 
-                    'lateral_raises': 'Lateral Raises', 
-                    'rear_delts': 'Rear Delts' 
-                },
-                arms: { 
-                    'hammer_curl': 'Hammer Curl', 
+                arms: {
+                    'hammer_curl': 'Hammer Curl',
                     'bicep_cable': 'Bicep Cable', 
+                    'shoulder_press': 'Shoulder Press',
+                    'lateral_raises': 'Lateral Raises',
+                    'rear_delts': 'Rear Delts',
                     'tricep_overhead_extension': 'Tricep Overhead Extension', 
                     'tricep_pushdown': 'Tricep Pushdown' 
+                },
+                legs: {
+                    'leg_extension': 'Leg Extension',
+                    'leg_press': 'Leg Press',
+                    'hamstring_curl': 'Hamstring Curl',
+                    'crunches': 'Crunches'
                 }
             };
 
             // --- STATE MANAGEMENT ---
             let state = {
                 position: null, muscle: null, exercise: null, exerciseName: null,
-                plannedReps: 10, actualReps: 10,
+                plannedReps: 10, actualReps: 10, weight: 0,
                 recording: false, calibrating: false,
                 sensorData: [], baselineData: [], tempSet: null, allSets: [], startTime: 0,
                 setCounter: {} // Track set numbers per exercise
@@ -244,6 +261,7 @@
                 exerciseGrid: document.getElementById('exerciseGrid'),
                 repSection: document.getElementById('repSection'),
                 repDisplay: document.getElementById('repDisplay'),
+                weightDisplay: document.getElementById('weightDisplay'),
                 postWorkout: document.getElementById('postWorkout'),
                 actualRepDisplay: document.getElementById('actualRepDisplay'),
                 summaryText: document.getElementById('summaryText'),
@@ -307,6 +325,12 @@
                 document.getElementById('repPlusBtn').onclick = () => adjustReps(1);
                 document.getElementById('quickRepBtns').addEventListener('click', (e) => {
                     if (e.target.tagName === 'BUTTON') setReps(parseInt(e.target.textContent));
+                });
+                
+                document.getElementById('weightMinusBtn').onclick = () => adjustWeight(-5);
+                document.getElementById('weightPlusBtn').onclick = () => adjustWeight(5);
+                document.getElementById('quickWeightBtns').addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') setWeight(parseInt(e.target.textContent));
                 });
                 elements.startBtn.onclick = toggleRecording;
                 document.getElementById('actualRepMinusBtn').onclick = () => adjustActualReps(-1);
@@ -394,6 +418,7 @@
                 document.querySelectorAll('#exerciseGrid .btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 elements.repSection.style.display = 'block';
+                elements.weightSection.style.display = 'block';
                 updateUI();
             }
 
@@ -421,6 +446,18 @@
                 elements.actualRepDisplay.textContent = count;
             }
 
+            function adjustWeight(delta) {
+                state.weight = Math.max(0, state.weight + delta);
+                elements.weightDisplay.textContent = state.weight;
+                updateUI();
+            }
+
+            function setWeight(weight) {
+                state.weight = weight;
+                elements.weightDisplay.textContent = weight;
+                updateUI();
+            }
+
             function updateUI() {
                 const ready = state.position && state.muscle && state.exercise;
                 elements.startBtn.disabled = !ready;
@@ -435,7 +472,7 @@
                     elements.startBtn.className = 'btn';
                 }
                 elements.status.textContent = ready ?
-                    `Ready: ${state.exerciseName} - ${state.position.replace('_', ' ')} (${state.plannedReps} reps)`:
+                    `Ready: ${state.exerciseName} - ${state.position.replace('_', ' ')} (${state.plannedReps} reps, ${state.weight}kg)`:
                     'Select Position & Muscle Group';
                 elements.summaryText.textContent = state.allSets.length > 0 ? `${state.allSets.length} set(s) recorded` : 'No sets recorded';
                 
@@ -525,7 +562,8 @@
                         exerciseId: state.exercise, 
                         exerciseName: state.exerciseName, 
                         phonePosition: state.position,
-                        plannedReps: state.plannedReps, 
+                        plannedReps: state.plannedReps,
+                        weight: state.weight,
                         recordingDuration: Date.now() - state.startTime,
                         sensorData: [...state.sensorData],
                     };
@@ -571,6 +609,7 @@
                     exercise_name: setObject.exerciseName,
                     reps: setObject.actualReps,
                     planned_reps: setObject.plannedReps,
+                    weight: setObject.weight || 0,
                     phone_position: setObject.phonePosition,
                     recording_duration: setObject.recordingDuration,
                     session_time: setObject.sessionTime,
